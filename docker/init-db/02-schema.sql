@@ -1,5 +1,5 @@
 -- =====================================================================
--- WerkDocs schema
+-- Lastenheft schema
 -- Multimodal RAG over industrial PDFs with EU AI Act compliance audit
 -- =====================================================================
 

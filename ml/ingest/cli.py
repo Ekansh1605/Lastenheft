@@ -31,10 +31,10 @@ from ml.ingest.store import get_pool, upsert_document_and_pages
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper(),
                     format="%(asctime)s %(levelname)-7s %(name)s :: %(message)s")
-log = logging.getLogger("werkdocs.cli")
+log = logging.getLogger("lastenheft.cli")
 console = Console()
 
-app = typer.Typer(add_completion=False, help="WerkDocs ingestion CLI.")
+app = typer.Typer(add_completion=False, help="Lastenheft ingestion CLI.")
 
 PAGE_IMAGE_ROOT = Path(os.getenv("PAGE_IMAGE_ROOT", "data/cache/pages"))
 
@@ -92,7 +92,7 @@ def stats() -> None:
         cur.execute("SELECT count(*) FROM page_embeddings")
         n_embs = cur.fetchone()[0]
 
-    table = Table(title="WerkDocs index stats")
+    table = Table(title="Lastenheft index stats")
     table.add_column("Entity")
     table.add_column("Count", justify="right")
     table.add_row("documents", str(n_docs))

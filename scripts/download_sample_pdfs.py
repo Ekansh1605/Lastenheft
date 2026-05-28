@@ -116,7 +116,7 @@ def main() -> int:
     args.out.mkdir(parents=True, exist_ok=True)
 
     ok = 0
-    with httpx.Client(headers={"User-Agent": "WerkDocs/0.1 (portfolio research)"}) as client, \
+    with httpx.Client(headers={"User-Agent": "Lastenheft/0.1 (portfolio research)"}) as client, \
          Progress(console=console) as progress:
         task = progress.add_task("Downloading sample PDFs", total=len(SOURCES))
         for src in SOURCES:

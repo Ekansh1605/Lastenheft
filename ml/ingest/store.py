@@ -19,7 +19,7 @@ from psycopg_pool import ConnectionPool
 from ml.ingest.embedder import EmbeddingResult
 from ml.ingest.pipeline import IngestedDocument, pack_patch_vectors, save_page_image
 
-log = logging.getLogger("werkdocs.store")
+log = logging.getLogger("lastenheft.store")
 
 _pool: ConnectionPool | None = None
 
@@ -27,7 +27,7 @@ _pool: ConnectionPool | None = None
 def get_pool() -> ConnectionPool:
     global _pool
     if _pool is None:
-        url = os.getenv("DATABASE_URL", "postgresql://werkdocs:werkdocs@localhost:5432/werkdocs")
+        url = os.getenv("DATABASE_URL", "postgresql://lastenheft:lastenheft@localhost:5433/lastenheft")
         _pool = ConnectionPool(url, min_size=1, max_size=4, configure=_configure_conn)
     return _pool
 

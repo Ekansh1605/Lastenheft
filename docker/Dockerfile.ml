@@ -1,5 +1,5 @@
 # =====================================================================
-# WerkDocs ML/API container — FastAPI + ColQwen2 + ingest + agents.
+# Lastenheft ML/API container — FastAPI + ColQwen2 + ingest + agents.
 # Multi-stage: build wheels in slim image, ship runtime with CUDA.
 # =====================================================================
 

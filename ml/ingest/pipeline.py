@@ -24,7 +24,7 @@ import numpy as np
 import pypdfium2 as pdfium
 from PIL import Image
 
-log = logging.getLogger("werkdocs.ingest")
+log = logging.getLogger("lastenheft.ingest")
 
 RENDER_DPI = int(os.getenv("INGEST_DPI", "150"))   # 150 is the ColPali default — good visual / speed tradeoff
 MAX_PAGES_PER_DOC = int(os.getenv("INGEST_MAX_PAGES", "200"))

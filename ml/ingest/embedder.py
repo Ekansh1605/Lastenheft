@@ -16,7 +16,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-log = logging.getLogger("werkdocs.embed")
+log = logging.getLogger("lastenheft.embed")
 
 
 @dataclass(slots=True)

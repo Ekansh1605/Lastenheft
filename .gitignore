@@ -72,3 +72,40 @@ logs/
 
 # Docker
 .docker-data/
+
+# Personal / sensitive — defense in depth
+*CV*.pdf
+*cv*.pdf
+*Resume*.pdf
+*resume*.pdf
+*Lebenslauf*.pdf
+Ekansh_Sharma_CV.pdf
+**/personal/
+**/.claude/
+.claude/
+
+# AI assistant artefacts that shouldn't be public
+plans/
+memory/
+scratch/
+notes.md
+TODO.md
+
+# Backups + temp
+*.bak
+*.tmp
+*.orig
+*~
+
+# HuggingFace cache (if it lands in project for any reason)
+.cache/huggingface/
+huggingface_cache/
+
+# Secrets safety net (any file matching common secret patterns)
+secrets.json
+credentials.json
+**/credentials/
+*.pem
+*.key
+*.crt
+!docker/init-db/*.sql

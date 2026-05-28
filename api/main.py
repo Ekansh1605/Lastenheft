@@ -1,4 +1,4 @@
-"""FastAPI entrypoint for the WerkDocs ML orchestration layer."""
+"""FastAPI entrypoint for the Lastenheft ML orchestration layer."""
 
 from __future__ import annotations
 
@@ -18,18 +18,18 @@ logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
     format="%(asctime)s %(levelname)-7s %(name)s :: %(message)s",
 )
-log = logging.getLogger("werkdocs.api")
+log = logging.getLogger("lastenheft.api")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    log.info("WerkDocs API starting (env=%s)", os.getenv("APP_ENV", "development"))
+    log.info("Lastenheft API starting (env=%s)", os.getenv("APP_ENV", "development"))
     yield
-    log.info("WerkDocs API shutting down")
+    log.info("Lastenheft API shutting down")
 
 
 app = FastAPI(
-    title="WerkDocs API",
+    title="Lastenheft API",
     version="0.1.0",
     description="Sovereign multimodal document intelligence for industrial manufacturing.",
     lifespan=lifespan,

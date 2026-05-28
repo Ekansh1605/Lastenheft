@@ -16,7 +16,7 @@ import numpy as np
 from ml.ingest.embedder import embed_query
 from ml.ingest.store import ann_search_pages
 
-log = logging.getLogger("werkdocs.retrieval")
+log = logging.getLogger("lastenheft.retrieval")
 
 
 @dataclass(slots=True)

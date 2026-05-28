@@ -1,5 +1,5 @@
 [project]
-name = "werkdocs"
+name = "lastenheft"
 version = "0.1.0"
 description = "Sovereign multimodal document intelligence for industrial manufacturing, EU AI Act-compliant by design"
 authors = [{name = "Ekansh Sharma", email = "ekanshsharma1605@gmail.com"}]

@@ -1,23 +1,32 @@
-# WerkDocs
+# Lastenheft
 
-> Sovereign multimodal document intelligence for industrial manufacturing — EU AI Act-compliant by design.
+> Sovereign multimodal RAG for the German industrial Mittelstand.
+> Because Geschäftsgeheimnis doesn't belong in OpenAI's logs.
 
-Self-hosted RAG over technical PDFs (engineering drawings, datasheets, BoMs, SOPs) in German + English, without sending IP to OpenAI. Built for Mittelstand manufacturers who can't compromise on Geschäftsgeheimnis or compliance.
+**Lastenheft** is the AI that reads every Lastenheft — and every datasheet, Schaltplan, Pflichtenheft, and SOP that came after. Multimodal retrieval over technical PDFs (engineering drawings, datasheets, BoMs, maintenance manuals) in German and English, designed from the ground up for EU AI Act compliance and on-premise sovereignty.
 
-**Status:** 🚧 Building — Day 1 of 5 (started 2026-05-28)
+> 🚧 **Active build** — Day 1 of 5 complete (2026-05-28). README will be polished on Day 5 with final eval results, screenshots, and demo video.
+
+---
+
+## Why the name?
+
+The **Lastenheft** (German engineering requirements specification) is the foundational document every German engineering project starts with. It defines what must be built, what constraints apply, what must be traceable. Every Bosch, Siemens, Trumpf, and ZF engineer has read a hundred of them.
+
+This system is named after that document because it embodies the same values: **precision, traceability, accountability** — applied to AI over your industrial knowledge.
 
 ---
 
 ## Why this exists
 
-German industrial Mittelstand has 40+ years of technical documentation locked in PDFs — engineering drawings, datasheets, maintenance manuals, certifications, BoMs — often mixed German + English, full of tables and diagrams that OCR mangles. They need AI to unlock this knowledge, but:
+German industrial Mittelstand companies have 40+ years of technical documentation locked in PDFs — engineering drawings, datasheets, maintenance manuals, certifications, BoMs — often mixed German + English, full of tables and diagrams that OCR mangles. They need AI to unlock this knowledge, but:
 
-1. **They cannot send sensitive IP to OpenAI** — Geschäftsgeheimnis / sovereignty is non-negotiable
-2. **EU AI Act enforcement is active in 2026** — industrial AI often classifies as high-risk under Article 6; every deployment needs documented risk classification, transparency, audit trails
-3. **They need engineering precision** — vibes-based LLM output fails when tolerances matter
-4. **Existing solutions (Microsoft Copilot, ChatGPT Enterprise) violate sovereignty requirements**
+1. **They cannot send sensitive IP to OpenAI.** Sovereignty / Geschäftsgeheimnis concerns are non-negotiable.
+2. **EU AI Act enforcement is active in 2026.** Industrial AI often classifies as high-risk under Article 6 (Annex I, safety components of machinery). Every deployment needs documented risk classification, transparency, and audit trails.
+3. **They need engineering precision** — vibes-based LLM output is unacceptable when tolerances and certifications matter.
+4. **Existing solutions (Microsoft Copilot, ChatGPT Enterprise) violate sovereignty requirements.**
 
-WerkDocs is designed from the ground up for these constraints.
+Lastenheft is designed from the ground up for these constraints.
 
 ---
 
@@ -30,53 +39,49 @@ Next.js 15 frontend  ──►  FastAPI orchestration  ──►  LangGraph mult
                                     ▼
                           ┌─────────┴─────────┐
                           ▼                   ▼
-              Multimodal Retrieval     LLM Router
-              (ColQwen2, no OCR)       (local Qwen3 4B ↔ API)
+              Multimodal retrieval     LLM Router
+              (ColQwen2 / ColPali)     (local Qwen3 4B ↔ Claude/GPT)
+              ▶ no OCR
+              ▶ DE + EN
                           │                   │
                           ▼                   │
               Postgres + pgvector             │
                           │                   │
                           ▼                   ▼
-              Audit log + AI Act compliance dashboard
+              Audit log (EU AI Act Art. 13) + Compliance dashboard
 ```
 
-**Key choices:**
+### Key technical choices
 
 | Layer | Choice | Rationale |
 |-------|--------|-----------|
 | Frontend | Next.js 15 + Tailwind + shadcn | Modern, type-safe, fast |
-| Auth + DB | Supabase + Postgres + pgvector | RLS for multi-tenant, mature pgvector |
+| Auth + DB | Supabase + Postgres + pgvector | RLS-ready for multi-tenant |
 | ML inference | FastAPI (Python 3.11) | Industry-standard ML serving |
-| Visual retrieval | **ColQwen2** (ColPali fallback) | No OCR — handles diagrams, tables, drawings directly |
+| Visual retrieval | **ColQwen2** (ColPali fallback) | No OCR — handles diagrams, tables, technical drawings directly |
 | Reranker | BGE-reranker-v2-m3, LoRA fine-tuned on DE+EN technical queries | Real ML signal, big quality lift |
-| LLM (local) | **Qwen3 4B Instruct** via Ollama | Sovereign default, strong DE+EN |
+| LLM (local) | **Qwen3 4B Instruct** via Ollama | Sovereign default, strong DE+EN, ~2.5GB VRAM |
 | LLM (API) | Claude Sonnet 4.6 / GPT-4o | Opt-in for complex reasoning, logged per AI Act Art. 13 |
 | Agents | LangGraph | Observable trajectories, production-grade |
-| Observability | Self-hosted Langfuse | Full traces, no data leaves your infra |
+| Observability | Self-hosted Langfuse | Full traces, no data leaves your infrastructure |
 | Deploy | Docker Compose | One command: `docker compose up` |
 
 ---
 
-## EU AI Act compliance design
-
-This system is designed against EU AI Act articles, not retrofitted. README mapping:
+## EU AI Act compliance — designed in, not bolted on
 
 | Requirement | Implementation |
 |-------------|----------------|
-| Art. 6 — risk classification | System self-classifies as "limited risk" with documented reasoning (RAG over docs ≠ safety-critical decision-making) |
+| Art. 6 — risk classification | System self-classifies as "limited risk" with documented reasoning (RAG over docs ≠ safety-critical decision-making). Seeded into `risk_classifications` table on first boot. |
 | Art. 13 — transparency to users | Every answer shows: source citations, LLM provider used, confidence score, local-vs-API routing decision |
 | Art. 14 — human oversight | All agent actions logged + reviewable; "Why this answer?" explanation modal |
 | Art. 10 — data governance | Documented data sources, lineage from chunk back to source PDF + page + bbox |
 | GDPR Art. 25 — privacy by design | Optional PII detector at ingest; full audit log; configurable data residency |
-| GDPR Art. 17 — right to erasure | DELETE cascades from documents → embeddings → audit logs (with retention exception) |
-
-Compliance dashboard exposes all of the above to admin users.
+| GDPR Art. 17 — right to erasure | DELETE cascades from documents → embeddings → audit logs |
 
 ---
 
-## Eval results
-
-_To be populated after Day 2 reranker training + Day 3 RAGAS run._
+## Eval results (Day 2-3 work — will be filled in)
 
 | Metric | Off-the-shelf | LoRA fine-tuned | Δ |
 |--------|---------------|-----------------|---|
@@ -96,30 +101,52 @@ _To be populated after Day 2 reranker training + Day 3 RAGAS run._
 **Prerequisites:**
 - Docker Desktop with WSL2
 - Node.js 20+
-- Python 3.11+
-- ~10GB free disk (models + Postgres data)
+- Python 3.11+ (via [uv](https://docs.astral.sh/uv/))
+- ~12GB free disk (models + Postgres + container images)
 - NVIDIA GPU with 6GB+ VRAM recommended (CPU fallback available, slower)
 
-**One-command boot:**
+**Quick start:**
 
 ```bash
-git clone https://github.com/Ekansh1605/werkdocs.git
-cd werkdocs
-cp .env.example .env  # add your API keys
-docker compose up -d
-pnpm install && pnpm dev
+git clone https://github.com/Ekansh1605/lastenheft.git
+cd lastenheft
+cp .env.example .env       # add your API keys (Anthropic / OpenAI)
+docker compose -f docker/docker-compose.yml up -d postgres langfuse-db langfuse
+uv sync                     # installs Python deps (torch+CUDA, ColPali, LangGraph, ...)
+uv run python scripts/prefetch_models.py    # downloads ColQwen2 (~6GB)
+uv run python scripts/download_sample_pdfs.py
+uv run python -m ml.ingest.cli ingest-dir data/pdfs
+uvicorn api.main:app --reload
+```
+
+In a second terminal:
+```bash
+cd web && pnpm install && pnpm dev
 ```
 
 Open http://localhost:3000.
 
 ---
 
+## Curated demo corpus
+
+15 publicly-available industrial documents, mix of German + English:
+- 3 × Siemens SIMATIC S7-1200 manuals (English)
+- 4 × Siemens SIMATIC S7-1500 / HMI manuals (German)
+- 1 × Bosch Rexroth IndraDrive Cs datasheet (English)
+- 5 × Festo pneumatic cylinder catalogs (DE + EN, ISO 15552)
+- 2 × EU regulatory PDFs (AI Act 2024/1689, Machinery Regulation 2023/1230)
+
+URLs in [`scripts/download_sample_pdfs.py`](scripts/download_sample_pdfs.py). All sourced from publishers' public download portals.
+
+---
+
 ## Limitations & future work
 
-- **VRAM:** 6GB GPU shares VRAM between ColQwen2 (~5GB FP16 / ~2.5GB Q4) and Qwen3 4B Q4 (~2.5GB). Tight but works.
+- **VRAM:** 6GB GPU shares VRAM between ColQwen2 and Qwen3 4B. Tight; works with quantization.
 - **Reranker training data:** Synthetic queries from GPT-4o. Real customer query logs would improve recall on niche technical jargon.
 - **PII detector:** Currently rule-based (Microsoft Presidio). A fine-tuned NER for German industrial PII would be next.
-- **No SAP integration yet.** Most Mittelstand have SAP/MES systems — connector would be production deployment work.
+- **No SAP/MES integration yet.** Most Mittelstand have SAP — connector would be production deployment work.
 - **Single-tenant in current MVP.** RLS schema is multi-tenant-ready; UI/billing is not.
 
 ---

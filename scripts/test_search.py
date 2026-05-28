@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from rich.console import Console
 from rich.table import Table
 
-os.environ.setdefault("DATABASE_URL", "postgresql://werkdocs:werkdocs@localhost:5433/werkdocs")
+os.environ.setdefault("DATABASE_URL", "postgresql://lastenheft:lastenheft@localhost:5433/lastenheft")
 
 from ml.retrieval.search import search  # noqa: E402
 
