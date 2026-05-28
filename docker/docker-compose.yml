@@ -1,0 +1,90 @@
+name: werkdocs
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: werkdocs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-werkdocs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-werkdocs}
+      POSTGRES_DB: ${POSTGRES_DB:-werkdocs}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-werkdocs}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  langfuse-db:
+    image: postgres:16-alpine
+    container_name: werkdocs-langfuse-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  langfuse:
+    image: langfuse/langfuse:2
+    container_name: werkdocs-langfuse
+    restart: unless-stopped
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse@langfuse-db:5432/langfuse
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-replace-me-with-openssl-rand-hex-32}
+      SALT: ${LANGFUSE_SALT:-replace-me-with-openssl-rand-hex-32}
+      NEXTAUTH_URL: http://localhost:3001
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_DEFAULT_PROJECT_ID: werkdocs
+      LANGFUSE_DEFAULT_PROJECT_ROLE: ADMIN
+    ports:
+      - "3001:3000"
+
+  ml-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ml
+    container_name: werkdocs-ml-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-werkdocs}:${POSTGRES_PASSWORD:-werkdocs}@postgres:5432/${POSTGRES_DB:-werkdocs}
+      OLLAMA_HOST: http://host.docker.internal:11434
+      LANGFUSE_HOST: http://langfuse:3000
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    profiles:
+      - full
+
+volumes:
+  postgres-data:
+  langfuse-db-data:
