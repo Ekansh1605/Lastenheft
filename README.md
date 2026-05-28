@@ -130,14 +130,20 @@ Open http://localhost:3000.
 
 ## Curated demo corpus
 
-15 publicly-available industrial documents, mix of German + English:
-- 3 × Siemens SIMATIC S7-1200 manuals (English)
-- 4 × Siemens SIMATIC S7-1500 / HMI manuals (German)
-- 1 × Bosch Rexroth IndraDrive Cs datasheet (English)
-- 5 × Festo pneumatic cylinder catalogs (DE + EN, ISO 15552)
-- 2 × EU regulatory PDFs (AI Act 2024/1689, Machinery Regulation 2023/1230)
+26 publicly-available industrial documents from 8 major German Mittelstand brands. Mix of German + English. ~85 MB total.
 
-URLs in [`scripts/download_sample_pdfs.py`](scripts/download_sample_pdfs.py). All sourced from publishers' public download portals.
+| Brand | Domain | Docs |
+|-------|--------|------|
+| **Siemens SIMATIC** | Industrial automation / PLC | 7 (3 EN + 4 DE) |
+| **Festo** | Pneumatics (ISO 15552 cylinders) | 5 (3 EN + 2 DE) |
+| **SICK** | Industrial sensors (photoelectric, ultrasonic, laser) | 4 (EN) |
+| **TRUMPF** | Laser / CNC machine tools | 3 (EN — TruLaser 1030 / 2030 + systems brochure) |
+| **Bosch Rexroth** | Drives + hydraulic valves | 3 (EN — IndraDrive + directional + cartridge valves) |
+| **KUKA** | Industrial robotics | 1 (EN — full robot portfolio, 27 MB / ~100+ pages) |
+| **SEW Eurodrive** | Drives / Movigear | 1 (DE) |
+| **EU regulatory** | AI Act + Machinery Regulation | 2 (EN — 2024/1689 + 2023/1230) |
+
+URLs in [`scripts/download_sample_pdfs.py`](scripts/download_sample_pdfs.py). All sourced from publishers' public download portals — verified live May 2026.
 
 ---
 

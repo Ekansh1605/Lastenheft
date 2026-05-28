@@ -78,6 +78,52 @@ SOURCES: list[dict[str, str]] = [
      "url": "https://ftp.festo.com/Public/PNEUMATIC/SOFTWARE_SERVICE/Documentation/2023/EN/DSBC_EN.PDF",
      "source": "festo-pneumatics"},
 
+    # ---- TRUMPF (laser / machine tools — Mittelstand icon, Ditzingen) ----
+    {"name": "trumpf-trulaser-2030-fiber-datasheet-en.pdf",
+     "url": "https://www.trumpf.com/filestorage/TRUMPF_US/Landingpages/TruLaser_2030_fiber/pdfs/TRUMPF-technical-data-sheet-TruLaser-2030-fiber-Special-Edition.pdf",
+     "source": "trumpf-trulaser"},
+    {"name": "trumpf-trulaser-1030-datasheet-en.pdf",
+     "url": "https://www.trumpf.com/filestorage/TRUMPF_US/Landingpages/TruLaser_1030_Special_Edition_Technical_Data_Sheet.pdf",
+     "source": "trumpf-trulaser"},
+    {"name": "trumpf-laser-systems-brochure-en.pdf",
+     "url": "https://www.trumpf.com/filestorage/TRUMPF_Master/Products/Machines_and_Systems/02_Brochures/TRUMPF-laser-systems-brochure-EN.pdf",
+     "source": "trumpf-laser-systems"},
+
+    # ---- KUKA (industrial robotics — Augsburg) ----
+    {"name": "kuka-robot-product-portfolio-en.pdf",
+     "url": "https://www.kuka.com/-/media/kuka-downloads/files/87f2706ce77c4318877932fb36f6002d/kuka_rob_product-portfolio_en_screen.pdf",
+     "source": "kuka-robotics"},
+
+    # ---- SICK (industrial sensors — Waldkirch) ----
+    {"name": "sick-wtb12-photoelectric-sensor-en.pdf",
+     "url": "https://cdn.sick.com/media/pdf/6/86/286/dataSheet_WTB12-3P2431_1041411_en.pdf",
+     "source": "sick-sensors"},
+    {"name": "sick-um30-ultrasonic-distance-sensor-en.pdf",
+     "url": "https://www.sick.com/media/pdf/7/57/357/dataSheet_UM30-213113_6036918_en.pdf",
+     "source": "sick-sensors"},
+    {"name": "sick-gl6-photoelectric-sensor-en.pdf",
+     "url": "https://www.sick.com/media/pdf/5/05/805/dataSheet_GL6-P4112_1051777_en.pdf",
+     "source": "sick-sensors"},
+    {"name": "sick-lms1xx-monitoring-box-en.pdf",
+     "url": "https://www.sick.com/media/pdf/8/68/368/dataSheet_Monitoring-Box-LMS1xx-Basic_1613765_en.pdf",
+     "source": "sick-sensors"},
+
+    # ---- SEW Eurodrive (drives — Bruchsal) ----
+    {"name": "sew-movigear-classic-de.pdf",
+     "url": "https://download.sew-eurodrive.com/download/pdf/25805126.pdf",
+     "source": "sew-eurodrive"},
+    {"name": "sew-movigear-b-manual-en.pdf",
+     "url": "https://download.sew-eurodrive.com/download/pdf/22746250.pdf",
+     "source": "sew-eurodrive"},
+
+    # ---- Bosch Rexroth (more, hydraulics side) ----
+    {"name": "bosch-rexroth-directional-valve-en.pdf",
+     "url": "https://apps.boschrexroth.com/products/compact-hydraulics/ch-catalog/pdf/RE18303-01_LC04Z_nlo.pdf",
+     "source": "bosch-rexroth"},
+    {"name": "bosch-rexroth-cartridge-valves-en.pdf",
+     "url": "https://apps.boschrexroth.com/products/compact-hydraulics/ch-catalog/pdf/18318-00.pdf",
+     "source": "bosch-rexroth"},
+
     # ---- EU regulatory (already-working) ----
     {"name": "eu-machinery-regulation-2023-1230.pdf",
      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32023R1230",
