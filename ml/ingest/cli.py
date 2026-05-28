@@ -41,7 +41,7 @@ PAGE_IMAGE_ROOT = Path(os.getenv("PAGE_IMAGE_ROOT", "data/cache/pages"))
 
 @app.command("ingest-file")
 def ingest_file(pdf_path: Path, source: str | None = None, language: str | None = None) -> None:
-    """Ingest a single PDF: rasterize → embed → store."""
+    """Ingest a single PDF: rasterize -> embed -> store."""
     if not pdf_path.exists():
         console.print(f"[red]File not found:[/] {pdf_path}")
         raise typer.Exit(1)
@@ -105,7 +105,7 @@ def _ingest_one(pdf_path: Path, source: str | None, language: str | None, quiet:
     pdf_bytes = pdf_path.read_bytes()
     doc = render_pdf(pdf_bytes, filename=pdf_path.name)
     if not quiet:
-        console.print(f"[cyan]{pdf_path.name}[/]: {doc.page_count} pages → embedding...")
+        console.print(f"[cyan]{pdf_path.name}[/]: {doc.page_count} pages -> embedding...")
     images = [p.image for p in doc.pages]
     embeddings = embed_pages(images, batch_size=1)
     doc_id = upsert_document_and_pages(
@@ -114,7 +114,7 @@ def _ingest_one(pdf_path: Path, source: str | None, language: str | None, quiet:
         source=source, language=language,
     )
     if not quiet:
-        console.print(f"  → document_id=[bold]{doc_id}[/]")
+        console.print(f"  -> document_id=[bold]{doc_id}[/]")
 
 
 if __name__ == "__main__":

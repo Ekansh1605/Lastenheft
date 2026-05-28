@@ -28,31 +28,63 @@ from rich.progress import Progress
 console = Console()
 log = logging.getLogger("download_sample_pdfs")
 
-# Curated list of public industrial PDFs. URLs verified manually before commit.
-# If any URL 404s on your machine, the script just skips it — no hard failure.
+# Curated list of public industrial PDFs. URLs verified live via WebSearch May 2026.
+# If any URL fails on your machine, the script just skips it — no hard failure.
 SOURCES: list[dict[str, str]] = [
-    # ---- Siemens SIMATIC ----
-    {"name": "siemens-simatic-s7-1200-system-manual.pdf",
-     "url": "https://cache.industry.siemens.com/dl/files/465/109764465/att_1130271/v1/s71200_system_manual_en-US_en-US.pdf",
-     "source": "siemens-simatic"},
-    {"name": "siemens-simatic-s7-1500-systemhandbuch.pdf",
-     "url": "https://cache.industry.siemens.com/dl/files/792/59191792/att_895917/v1/s71500_system_manual_de-DE_de-DE.pdf",
-     "source": "siemens-simatic"},
-    # ---- Bosch Rexroth ----
-    {"name": "bosch-rexroth-indradrive-cs.pdf",
-     "url": "https://www.boschrexroth.com/various/utilities/mediadirectory/download/index.jsp?object_nr=R911334042",
+    # ---- Siemens SIMATIC S7-1200 (English) ----
+    {"name": "siemens-s7-1200-system-manual-en.pdf",
+     "url": "https://support.industry.siemens.com/cs/attachments/109797241/s71200_system_manual_en-US_en-US.pdf",
+     "source": "siemens-simatic-s7-1200"},
+    {"name": "siemens-s7-1200-g2-system-manual-en.pdf",
+     "url": "https://support.industry.siemens.com/cs/attachments/109972011/S71200_G2_system_manual_en-US.pdf",
+     "source": "siemens-simatic-s7-1200"},
+    {"name": "siemens-s7-1200-functional-safety-en.pdf",
+     "url": "https://support.industry.siemens.com/cs/attachments/104547552/s71200_f_user_manual_en-US_en-US.pdf",
+     "source": "siemens-simatic-s7-1200"},
+
+    # ---- Siemens SIMATIC S7-1500 (German — bilingual demo) ----
+    {"name": "siemens-s7-1500-cpu1517-pndp-de.pdf",
+     "url": "https://cache.industry.siemens.com/dl/files/765/90471765/att_895905/v2/s71500_cpu1517_3_pndp_manual_de-DE_de-DE.pdf",
+     "source": "siemens-simatic-s7-1500"},
+    {"name": "siemens-s7-1500-cpu1518-pndp-de.pdf",
+     "url": "https://cache.industry.siemens.com/dl/files/632/81164632/att_895909/v2/s71500_cpu1518_4_pndp_manual_de-DE_de-DE.pdf",
+     "source": "siemens-simatic-s7-1500"},
+    {"name": "siemens-s7-1500-di-16x230vac-de.pdf",
+     "url": "https://cache.industry.siemens.com/dl/files/398/59193398/att_77122/v1/s71500_di_16x230vac_ba_manual_de-DE_de-DE.pdf",
+     "source": "siemens-simatic-s7-1500"},
+    {"name": "siemens-hmi-lite-systemhandbuch-de.pdf",
+     "url": "https://cache.industry.siemens.com/dl/files/639/109823639/att_1152244/v1/Systemhandbuch_HMILite_V18_DE.pdf",
+     "source": "siemens-hmi"},
+
+    # ---- Bosch Rexroth (drives + automation) ----
+    {"name": "bosch-rexroth-indradrive-cs-datasheet-en.pdf",
+     "url": "https://www.cmafh.com/images/Master%20PDFs/BRC/Drives/Rexroth%20CS%20Drive%20Data%20Sheet%20p146994_en.pdf",
      "source": "bosch-rexroth"},
-    # ---- EU regulatory ----
+
+    # ---- Festo (pneumatics — DE + EN, ISO 15552) ----
+    {"name": "festo-dnc-cylinder-en.pdf",
+     "url": "https://www.festo.com/media/catalog/202856_documentation.pdf",
+     "source": "festo-pneumatics"},
+    {"name": "festo-dsbc-cylinder-en.pdf",
+     "url": "https://www.festo.com/media/catalog/202904_documentation.pdf",
+     "source": "festo-pneumatics"},
+    {"name": "festo-adn-aen-compact-cylinder-en.pdf",
+     "url": "https://www.festo.com/media/catalog/202551_documentation.pdf",
+     "source": "festo-pneumatics"},
+    {"name": "festo-dsbc-normzylinder-de.pdf",
+     "url": "https://ftp.festo.com/public/pneumatic/SOFTWARE_SERVICE/Documentation/2017/DE/DSBC_DE.PDF",
+     "source": "festo-pneumatics"},
+    {"name": "festo-dsbc-cylinder-2023-en.pdf",
+     "url": "https://ftp.festo.com/Public/PNEUMATIC/SOFTWARE_SERVICE/Documentation/2023/EN/DSBC_EN.PDF",
+     "source": "festo-pneumatics"},
+
+    # ---- EU regulatory (already-working) ----
     {"name": "eu-machinery-regulation-2023-1230.pdf",
      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32023R1230",
      "source": "eu-regulation"},
     {"name": "eu-ai-act-2024-1689.pdf",
      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32024R1689",
      "source": "eu-ai-act"},
-    # ---- CE marking ----
-    {"name": "ce-marking-blue-guide-2022.pdf",
-     "url": "https://op.europa.eu/o/opportal-service/download-handler?identifier=ab800f04-5747-11ed-92ed-01aa75ed71a1&format=pdf&language=en&productionSystem=cellar&part=",
-     "source": "ce-marking"},
 ]
 
 
