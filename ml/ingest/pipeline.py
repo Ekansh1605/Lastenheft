@@ -4,11 +4,13 @@ PDF ingestion pipeline.
 Flow per document:
     1. Hash the PDF (sha256) so we de-dupe across uploads.
     2. Rasterize each page to PNG via pypdfium2 (faster + pure-Python than pdf2image).
-    3. Compute ColQwen2 multi-vector embeddings per page.
-    4. Mean-pool each page's patches into a single 128-dim vector for ANN.
-    5. Persist documents/pages/page_embeddings rows.
+    3. Extract page text via pypdfium2 textpage (used downstream for synthetic
+       query generation, RAGAS faithfulness scoring, etc.).
+    4. Compute ColPali multi-vector embeddings per page (see embedder.py).
+    5. Mean-pool each page's patches into a single 128-dim vector for ANN.
+    6. Persist documents/pages/page_embeddings rows.
 
-This is the hot path. Performance matters because we'll index 50-100 PDFs.
+This is the hot path. Performance matters because we'll index ~25 PDFs.
 """
 
 from __future__ import annotations
@@ -26,8 +28,8 @@ from PIL import Image
 
 log = logging.getLogger("lastenheft.ingest")
 
-RENDER_DPI = int(os.getenv("INGEST_DPI", "150"))   # 150 is the ColPali default — good visual / speed tradeoff
-MAX_PAGES_PER_DOC = int(os.getenv("INGEST_MAX_PAGES", "200"))
+RENDER_DPI = int(os.getenv("INGEST_DPI", "150"))   # 150 is the ColPali default
+MAX_PAGES_PER_DOC = int(os.getenv("INGEST_MAX_PAGES", "50"))
 
 
 @dataclass(slots=True)
@@ -36,6 +38,7 @@ class RenderedPage:
     image: Image.Image
     width: int
     height: int
+    text: str          # extractable text (may be empty for scanned/image-only pages)
 
 
 @dataclass(slots=True)
@@ -50,8 +53,20 @@ def sha256_bytes(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
+def _extract_text(page: pdfium.PdfPage) -> str:
+    """Pull whatever text pypdfium2 can extract from a page. Empty string if none."""
+    try:
+        textpage = page.get_textpage()
+        text = textpage.get_text_range() or ""
+        textpage.close()
+        return text.strip()
+    except Exception as e:  # noqa: BLE001 — text extraction is best-effort
+        log.debug("Text extraction failed on page: %s", e)
+        return ""
+
+
 def render_pdf(pdf_bytes: bytes, filename: str) -> IngestedDocument:
-    """Rasterize a PDF's pages to PIL images at INGEST_DPI."""
+    """Rasterize a PDF's pages to PIL images at INGEST_DPI, also extract text."""
     pdf = pdfium.PdfDocument(io.BytesIO(pdf_bytes))
     page_count = len(pdf)
     if page_count > MAX_PAGES_PER_DOC:
@@ -63,7 +78,14 @@ def render_pdf(pdf_bytes: bytes, filename: str) -> IngestedDocument:
         page = pdf[idx]
         bitmap = page.render(scale=scale)
         img = bitmap.to_pil().convert("RGB")
-        pages.append(RenderedPage(page_number=idx + 1, image=img, width=img.width, height=img.height))
+        text = _extract_text(page)
+        pages.append(RenderedPage(
+            page_number=idx + 1,
+            image=img,
+            width=img.width,
+            height=img.height,
+            text=text,
+        ))
         page.close()
     pdf.close()
     return IngestedDocument(

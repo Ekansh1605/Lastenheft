@@ -65,13 +65,14 @@ def upsert_document_and_pages(
 
             cur.execute(
                 """
-                INSERT INTO pages (document_id, page_number, width, height, image_path)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO pages (document_id, page_number, width, height, image_path, extracted_text)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (document_id, page_number) DO UPDATE
-                    SET image_path = EXCLUDED.image_path
+                    SET image_path = EXCLUDED.image_path,
+                        extracted_text = EXCLUDED.extracted_text
                 RETURNING id::text
                 """,
-                (document_id, page.page_number, page.width, page.height, str(image_path)),
+                (document_id, page.page_number, page.width, page.height, str(image_path), page.text),
             )
             page_id = cur.fetchone()[0]
 

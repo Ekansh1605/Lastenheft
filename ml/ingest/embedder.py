@@ -1,8 +1,13 @@
 """
-ColQwen2 multi-vector visual embedder.
+Multimodal visual embedder.
 
-Loads once (model is ~5GB FP16). Use process-level singleton — never load twice.
-Falls back to ColPali if ColQwen2 isn't available or VRAM is tight.
+Defaults to **ColPali v1.3** which loads cleanly under transformers 5.x.
+ColQwen2 v1.0 is supported as a fallback but its LoRA adapter weights
+mismatch transformers 5.x layer names (the warnings are loud but the base
+model still works — we just lose the fine-tune benefit).
+
+Loaded once per process (model is ~5GB FP16). Use the singleton — never
+load twice.
 """
 
 from __future__ import annotations
@@ -37,18 +42,20 @@ def _device() -> str:
 
 @lru_cache(maxsize=1)
 def _load_model():
-    """Load ColQwen2 (preferred) or ColPali (fallback). Cached for process lifetime."""
+    """Load ColPali (preferred) or ColQwen2 (fallback). Cached for process lifetime."""
     from colpali_engine.models import ColPali, ColPaliProcessor, ColQwen2, ColQwen2Processor
 
     device = _device()
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
 
-    primary = os.getenv("COLQWEN_MODEL", "vidore/colqwen2-v1.0")
-    fallback = os.getenv("COLPALI_FALLBACK", "vidore/colpali-v1.3")
+    # ColPali first — its weights load cleanly with the current transformers version.
+    # ColQwen2 second — kept as a fallback for when the LoRA-weight mismatch is fixed upstream.
+    primary = os.getenv("COLPALI_MODEL", "vidore/colpali-v1.3")
+    fallback = os.getenv("COLQWEN_FALLBACK", "vidore/colqwen2-v1.0")
 
     for name, model_cls, proc_cls in [
-        (primary, ColQwen2, ColQwen2Processor),
-        (fallback, ColPali, ColPaliProcessor),
+        (primary, ColPali, ColPaliProcessor),
+        (fallback, ColQwen2, ColQwen2Processor),
     ]:
         try:
             log.info("Loading visual embedder: %s (device=%s dtype=%s)", name, device, dtype)
@@ -57,8 +64,8 @@ def _load_model():
             log.info("Visual embedder ready: %s", name)
             return model, processor, name
         except Exception as e:  # noqa: BLE001 — try fallback on any load failure
-            log.warning("Failed to load %s: %s — trying fallback", name, e)
-    raise RuntimeError("Could not load any visual embedder (ColQwen2 nor ColPali)")
+            log.warning("Failed to load %s: %s -- trying fallback", name, e)
+    raise RuntimeError("Could not load any visual embedder (ColPali nor ColQwen2)")
 
 
 @torch.inference_mode()
