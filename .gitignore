@@ -1,0 +1,74 @@
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+.npm
+.eslintcache
+.turbo/
+
+# uv
+.uv-cache/
+
+# ML artifacts
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+checkpoints/
+wandb/
+mlruns/
+lightning_logs/
+runs/
+
+# Data (keep small samples in git, big stuff out)
+data/pdfs/*.pdf
+!data/pdfs/.gitkeep
+data/eval/raw/
+data/cache/
+
+# Models
+models/
+*.gguf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Docker
+.docker-data/
