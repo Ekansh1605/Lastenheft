@@ -2,28 +2,19 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import { NavLink } from "@/components/nav-link";
+import { SystemStatus } from "@/components/system-status";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Lastenheft — Sovereign Multimodal RAG",
   description:
-    "Self-hosted, EU AI Act-compliant multimodal RAG over German industrial technical documentation.",
+    "Self-hosted, EU AI Act-compliant multimodal RAG over German industrial technical documentation. ColPali + LangGraph + Qwen3, on-prem.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
@@ -31,44 +22,124 @@ export default function RootLayout({
     >
       <body
         suppressHydrationWarning
-        className="min-h-full flex flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50"
+        className="min-h-full flex flex-col"
+        style={{ background: "var(--background)", color: "var(--foreground)" }}
       >
-        <header className="border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
-            <Link href="/" className="font-semibold tracking-tight flex items-center gap-2">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
-              <span>Lastenheft</span>
-              <span className="hidden sm:inline text-xs font-normal text-neutral-500">
-                sovereign multimodal RAG
+        {/* --------------- HEADER --------------- */}
+        <header
+          className="sticky top-0 z-30 border-b"
+          style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+        >
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            {/* Brand */}
+            <Link href="/" className="flex items-center gap-3 group">
+              {/* Geometric mark — square with notch (industrial drawing motif) */}
+              <span
+                className="relative inline-flex h-7 w-7 items-center justify-center rounded-[3px] transition-transform group-hover:scale-105"
+                style={{ background: "var(--foreground)" }}
+                aria-hidden
+              >
+                <span
+                  className="absolute inset-[5px] rounded-[1px]"
+                  style={{ background: "var(--accent)" }}
+                />
               </span>
+              <div className="flex flex-col leading-tight">
+                <span className="text-[15px] font-semibold tracking-tight">
+                  Lastenheft
+                </span>
+                <span
+                  className="text-[10px] uppercase tracking-[0.14em] font-medium hidden sm:block"
+                  style={{ color: "var(--text-subtle)" }}
+                >
+                  Sovereign Industrial RAG
+                </span>
+              </div>
             </Link>
-            <nav className="flex items-center gap-1 text-sm">
-              <Link
-                href="/"
-                className="px-3 py-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              >
-                Ask
-              </Link>
-              <Link
-                href="/compliance"
-                className="px-3 py-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              >
-                Compliance
-              </Link>
-              <a
-                href="https://github.com/Ekansh1605/Lastenheft"
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              >
-                GitHub
-              </a>
-            </nav>
+
+            {/* Nav + status */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              <SystemStatus />
+              <nav className="flex items-center gap-0.5 ml-2">
+                <NavLink href="/">Ask</NavLink>
+                <NavLink href="/compliance">Compliance</NavLink>
+                <a
+                  href="https://github.com/Ekansh1605/Lastenheft"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 text-sm rounded-[3px] transition-colors flex items-center gap-1.5 hover:bg-[var(--surface-muted)]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+                    <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.8.1-.8 1.2.1 1.9 1.3 1.9 1.3 1.1 1.9 2.9 1.4 3.6 1 .1-.8.4-1.4.8-1.7-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.3-3.2-.1-.4-.6-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.6.2 2.9.1 3.2.8.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/>
+                  </svg>
+                  <span className="hidden sm:inline">GitHub</span>
+                </a>
+              </nav>
+            </div>
           </div>
         </header>
+
         <main className="flex-1">{children}</main>
-        <footer className="border-t border-neutral-200 dark:border-neutral-800 py-4 text-center text-xs text-neutral-500">
-          Built for German industrial Mittelstand. Geschäftsgeheimnis stays on-prem.
+
+        {/* --------------- FOOTER --------------- */}
+        <footer
+          className="border-t mt-12"
+          style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+        >
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
+            <div className="space-y-2">
+              <div className="font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>
+                Lastenheft
+              </div>
+              <p style={{ color: "var(--text-muted)" }}>
+                Built for German industrial Mittelstand.
+                <br />
+                Geschäftsgeheimnis stays on-prem.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="font-semibold uppercase tracking-[0.1em] text-[10px]" style={{ color: "var(--text-subtle)" }}>
+                Stack
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  "ColPali", "LangGraph", "Qwen3 4B", "BGE+LoRA",
+                  "FastAPI", "Next.js 16", "pgvector", "Langfuse",
+                ].map((s) => (
+                  <span
+                    key={s}
+                    className="px-1.5 py-0.5 rounded-[2px] font-mono text-[10px]"
+                    style={{ background: "var(--surface-muted)", color: "var(--text-muted)" }}
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="font-semibold uppercase tracking-[0.1em] text-[10px]" style={{ color: "var(--text-subtle)" }}>
+                Compliance
+              </div>
+              <ul className="space-y-1" style={{ color: "var(--text-muted)" }}>
+                <li>EU AI Act Art. 6 / 13 / 14</li>
+                <li>GDPR Art. 17 right-to-erasure</li>
+                <li>Audit trail per agent node</li>
+              </ul>
+            </div>
+          </div>
+          <div
+            className="border-t py-3"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <div
+              className="mx-auto max-w-6xl px-4 sm:px-6 text-[10px] font-mono flex items-center justify-between"
+              style={{ color: "var(--text-subtle)" }}
+            >
+              <span>MIT · 2026 Ekansh Sharma</span>
+              <span>built in 5 days for German Mittelstand AI roles</span>
+            </div>
+          </div>
         </footer>
       </body>
     </html>
