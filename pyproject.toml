@@ -36,7 +36,7 @@ dependencies = [
     "sqlalchemy>=2.0.36",
     "alembic>=1.14.0",
     # Eval + observability
-    "ragas>=0.2.6",
+    "ragas>=0.4.3",
     "langfuse>=2.55.0",
     "datasets>=3.1.0",
     # Utilities
@@ -46,6 +46,7 @@ dependencies = [
     "typer>=0.13.0",
     "tenacity>=9.0.0",
     "rank-bm25>=0.2.2",
+    "python-multipart>=0.0.29",
 ]
 
 [project.optional-dependencies]
