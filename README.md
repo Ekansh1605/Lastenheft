@@ -3,68 +3,112 @@
 > Sovereign multimodal RAG for the German industrial Mittelstand.
 > Because Geschäftsgeheimnis doesn't belong in OpenAI's logs.
 
-**Lastenheft** is the AI that reads every Lastenheft — and every datasheet, Schaltplan, Pflichtenheft, and SOP that came after. Multimodal retrieval over technical PDFs (engineering drawings, datasheets, BoMs, maintenance manuals) in German and English, designed from the ground up for EU AI Act compliance and on-premise sovereignty.
+**Lastenheft** is a production-grade Q&A system over technical PDFs from German industrial manufacturers (Siemens, Bosch Rexroth, TRUMPF, KUKA, Festo, SICK, SEW Eurodrive) — handling engineering drawings, datasheets, BoMs, and maintenance manuals in German + English without OCR, without sending IP to OpenAI, and with EU AI Act compliance designed in from the schema layer up.
 
-> 🚧 **Active build** — Day 1 of 5 complete (2026-05-28). README will be polished on Day 5 with final eval results, screenshots, and demo video.
-
----
-
-## Why the name?
-
-The **Lastenheft** (German engineering requirements specification) is the foundational document every German engineering project starts with. It defines what must be built, what constraints apply, what must be traceable. Every Bosch, Siemens, Trumpf, and ZF engineer has read a hundred of them.
-
-This system is named after that document because it embodies the same values: **precision, traceability, accountability** — applied to AI over your industrial knowledge.
+Named after the *Lastenheft* — the customer requirements specification document every German engineer at Bosch / Siemens / Trumpf / ZF starts a project with.
 
 ---
 
 ## Why this exists
 
-German industrial Mittelstand companies have 40+ years of technical documentation locked in PDFs — engineering drawings, datasheets, maintenance manuals, certifications, BoMs — often mixed German + English, full of tables and diagrams that OCR mangles. They need AI to unlock this knowledge, but:
+German industrial Mittelstand has 40+ years of technical documentation locked in PDFs. They need AI to unlock it, but:
 
-1. **They cannot send sensitive IP to OpenAI.** Sovereignty / Geschäftsgeheimnis concerns are non-negotiable.
-2. **EU AI Act enforcement is active in 2026.** Industrial AI often classifies as high-risk under Article 6 (Annex I, safety components of machinery). Every deployment needs documented risk classification, transparency, and audit trails.
-3. **They need engineering precision** — vibes-based LLM output is unacceptable when tolerances and certifications matter.
-4. **Existing solutions (Microsoft Copilot, ChatGPT Enterprise) violate sovereignty requirements.**
+1. **They cannot send sensitive IP to OpenAI.** Geschäftsgeheimnis is non-negotiable.
+2. **EU AI Act enforcement is active in 2026.** Industrial AI often classifies as high-risk under Article 6; every deployment needs documented risk classification, transparency, audit trails.
+3. **They need engineering precision** — vibes-based LLM output fails when tolerances and certifications matter.
+4. **Existing solutions (Microsoft Copilot for M365, ChatGPT Enterprise) violate sovereignty requirements.**
 
-Lastenheft is designed from the ground up for these constraints.
+Lastenheft solves all four.
+
+---
+
+## What it does (~3 minute demo)
+
+> _Demo video and screenshots coming — see [DEMO.md](DEMO.md) for the script and recorded walkthrough_
+
+**A user asks an industrial question in German or English** →
+the multi-agent system decomposes it →
+**ColPali multimodal retrieval** finds the relevant pages (without OCR — works on diagrams, tables, technical drawings) →
+**a LoRA-fine-tuned BGE reranker** picks the top 5 →
+**a local Qwen3 4B model OR an opt-in API LLM** writes the answer with bracketed citations →
+**every step writes an audit row** for EU AI Act Article 13 transparency.
+
+The user sees the live agent trajectory, a cited answer, the citation cards, and can replay any past query from the sidebar history.
 
 ---
 
 ## Architecture
 
 ```
-Next.js 15 frontend  ──►  FastAPI orchestration  ──►  LangGraph multi-agent
-                                    │                  (planner / retriever /
-                                    │                   validator / synthesizer)
-                                    ▼
-                          ┌─────────┴─────────┐
-                          ▼                   ▼
-              Multimodal retrieval     LLM Router
-              (ColQwen2 / ColPali)     (local Qwen3 4B ↔ Claude/GPT)
-              ▶ no OCR
-              ▶ DE + EN
-                          │                   │
-                          ▼                   │
-              Postgres + pgvector             │
-                          │                   │
-                          ▼                   ▼
-              Audit log (EU AI Act Art. 13) + Compliance dashboard
+┌──────────────────────────────────────────────────────────────────────┐
+│ Next.js 15 frontend                                                  │
+│  • Sidebar with query history (ChatGPT-style)                        │
+│  • SSE-streamed agent trajectory timeline                            │
+│  • Citation pills [1] [2] anchored to source cards                   │
+│  • Live AI-Act compliance dashboard                                  │
+└─────────────────────────────────┬────────────────────────────────────┘
+                                  │ POST /query/stream (SSE)
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FastAPI orchestration                                                │
+│  • slowapi per-IP rate limit (configurable)                          │
+│  • asyncio.wait_for hard timeout                                     │
+│  • request.is_disconnected() cancellation                            │
+│  • CORS via CORS_ORIGINS env var                                     │
+└─────────────────────────────────┬────────────────────────────────────┘
+                                  │
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ LangGraph multi-agent (agents/)                                      │
+│                                                                      │
+│   planner ─► retriever ─► validator ─► synthesizer                   │
+│      │           │            │             │                        │
+│      │           │            │             ▼                        │
+│      │           │            │     ┌──────────────┐                 │
+│      │           │            │     │ LLM Router   │                 │
+│      │           │            │     │   • local    │                 │
+│      │           │            │     │     Qwen3 4B │                 │
+│      │           │            │     │   • API      │                 │
+│      │           │            │     │     Claude   │                 │
+│      │           │            │     │   • fallback │                 │
+│      │           │            │     │     on error │                 │
+│      │           │            │     └──────────────┘                 │
+│      │           │            │                                      │
+│      │           ▼            └─► coverage + escalation              │
+│      │   ColPali v1.3 (no OCR, multi-vector)                         │
+│      │       → mean-vector ANN over pgvector                         │
+│      │       → BGE-reranker-v2-m3 + LoRA (+8.4 Hit@1)                │
+│      ▼                                                               │
+│   decompose sub-queries, score complexity                            │
+└─────────────────────────────────┬────────────────────────────────────┘
+                                  │
+                ┌─────────────────┼─────────────────┐
+                ▼                 ▼                 ▼
+        ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+        │   Postgres   │  │   audit_     │  │   Langfuse   │
+        │  + pgvector  │  │   events     │  │   (optional) │
+        │              │  │              │  │              │
+        │  • documents │  │  Art. 13     │  │  trace UI    │
+        │  • pages     │  │  per-node    │  │              │
+        │  • embeddings│  │  provider/   │  │              │
+        │              │  │  model/cost  │  │              │
+        └──────────────┘  └──────────────┘  └──────────────┘
 ```
 
-### Key technical choices
+### Tech choices
 
-| Layer | Choice | Rationale |
-|-------|--------|-----------|
-| Frontend | Next.js 15 + Tailwind + shadcn | Modern, type-safe, fast |
-| Auth + DB | Supabase + Postgres + pgvector | RLS-ready for multi-tenant |
-| ML inference | FastAPI (Python 3.11) | Industry-standard ML serving |
-| Visual retrieval | **ColQwen2** (ColPali fallback) | No OCR — handles diagrams, tables, technical drawings directly |
-| Reranker | BGE-reranker-v2-m3, LoRA fine-tuned on DE+EN technical queries | Real ML signal, big quality lift |
-| LLM (local) | **Qwen3 4B Instruct** via Ollama | Sovereign default, strong DE+EN, ~2.5GB VRAM |
-| LLM (API) | Claude Sonnet 4.6 / GPT-4o | Opt-in for complex reasoning, logged per AI Act Art. 13 |
-| Agents | LangGraph | Observable trajectories, production-grade |
-| Observability | Self-hosted Langfuse | Full traces, no data leaves your infrastructure |
-| Deploy | Docker Compose | One command: `docker compose up` |
+| Layer | Choice | Why |
+|-------|--------|-----|
+| Frontend | Next.js 16 + React 19 + Tailwind v4 + TypeScript | Modern, type-safe, App Router with SSE |
+| Backend | FastAPI 0.115 (Python 3.11) | Async, fast, OpenAPI for free, slowapi rate limiting |
+| DB | Postgres 16 + pgvector 0.8 + HNSW | ANN at scale, RLS-ready for multi-tenant |
+| Visual retrieval | **ColPali v1.3** (PaliGemma-based) | No OCR — embeds page IMAGES directly. Handles diagrams, tables, drawings that text retrievers miss. |
+| Reranker | BGE-reranker-v2-m3 (568M) + LoRA (~2.6M trainable) | Cross-encoder for high-precision top-K; LoRA fine-tune on industrial DE+EN queries |
+| LLM (sovereign default) | **Qwen3 4B Instruct** via Ollama | Strong DE+EN at ~2.5GB VRAM; truly on-prem |
+| LLM (escalation) | Claude Sonnet 4.6 / GPT-4o | Opt-in via `sovereignty_mode=hybrid`, logged per Art. 13 |
+| Agent framework | LangGraph | Observable trajectories, listwise state, streamable |
+| Observability | Self-hosted Langfuse | Full trace, runs in Docker Compose alongside everything else |
+| Deploy | Docker Compose + Vercel (frontend) | One command stands up the whole stack |
 
 ---
 
@@ -72,18 +116,19 @@ Next.js 15 frontend  ──►  FastAPI orchestration  ──►  LangGraph mult
 
 | Requirement | Implementation |
 |-------------|----------------|
-| Art. 6 — risk classification | System self-classifies as "limited risk" with documented reasoning (RAG over docs ≠ safety-critical decision-making). Seeded into `risk_classifications` table on first boot. |
-| Art. 13 — transparency to users | Every answer shows: source citations, LLM provider used, confidence score, local-vs-API routing decision |
-| Art. 14 — human oversight | All agent actions logged + reviewable; "Why this answer?" explanation modal |
-| Art. 10 — data governance | Documented data sources, lineage from chunk back to source PDF + page + bbox |
-| GDPR Art. 25 — privacy by design | Optional PII detector at ingest; full audit log; configurable data residency |
-| GDPR Art. 17 — right to erasure | DELETE cascades from documents → embeddings → audit logs |
+| **Art. 6** — risk classification | System self-classifies as "limited risk" with documented reasoning. Seeded into `risk_classifications` table on first DB init. Visible at `/compliance`. |
+| **Art. 13** — transparency to users | Every answer shows: source citations, LLM provider used, confidence score, local-vs-API routing decision. Persisted to `audit_events` table per agent node. |
+| **Art. 14** — human oversight | All agent actions logged + reviewable from compliance dashboard with per-row provider/model/tokens/cost/latency. |
+| **Art. 10** — data governance | Documented data sources, lineage from chunk back to source PDF + page number. |
+| **GDPR Art. 25** — privacy by design | Audit log lives next to user data in same Postgres; configurable data residency via single DATABASE_URL. |
+| **GDPR Art. 17** — right to erasure | `DELETE /query/{id}` and `DELETE /session/{id}` endpoints. UI exposes per-item delete + "erase data" session wipe. |
+| **GDPR Art. 20** — portability | Audit log exposed as JSON via `GET /compliance/audit-log` (CSV export planned). |
 
 ---
 
 ## Eval results
 
-**Setup:** 26 industrial PDFs across 8 Mittelstand brands (Siemens, Festo, Bosch Rexroth, TRUMPF, KUKA, SICK, SEW Eurodrive + EU regulatory). 909 pages indexed via ColPali v1.3 multi-vector visual embeddings. 714 synthetic DE+EN technical query-passage pairs generated via Claude Sonnet 4.6, stratified across brands, with hard negatives mined via ColPali ANN. BGE-reranker-v2-m3 fine-tuned with LoRA (rank 16, ~2.6M trainable params, 0.46% of 570M base) for 3 epochs on 606 train / 108 held-out eval queries.
+**Setup:** 26 industrial PDFs across 8 Mittelstand brands. 909 pages indexed via ColPali v1.3 multi-vector visual embeddings. 714 synthetic DE+EN technical query-passage pairs generated via Claude Sonnet 4.6, stratified across brands, hard negatives mined via ColPali ANN. BGE-reranker-v2-m3 fine-tuned with LoRA (rank 16, ~2.6M trainable params, 0.46% of 570M base) for 3 epochs on 606 train / 108 held-out eval queries.
 
 ### Retrieval (full-corpus eval, 108 held-out queries, 909 candidate pages)
 
@@ -104,31 +149,8 @@ Next.js 15 frontend  ──►  FastAPI orchestration  ──►  LangGraph mult
 | After epoch 2 | 0.861 |
 | **After epoch 3 (saved)** | **0.898** |
 
-### Reproducibility
-
-```bash
-# 1. Spin up infra
-docker compose -f docker/docker-compose.yml --env-file .env up -d
-uv sync
-
-# 2. Download corpus + ingest
-uv run python scripts/download_sample_pdfs.py
-uv run python -m ml.ingest.cli ingest-dir data/pdfs
-
-# 3. Generate synthetic training data (requires ANTHROPIC_API_KEY, ~$4)
-uv run python -m ml.training.gen_synth_queries --sample 250 --hard-negs 5
-
-# 4. Train reranker (1.5-2 hr on RTX 3060 6GB)
-uv run python -m ml.training.train_reranker \
-    --synth data/eval/synth_queries.jsonl \
-    --epochs 3 --batch 4 --lr 2e-4 --max-negs 4
-
-# 5. Evaluate (15 min)
-uv run python -m ml.training.eval_retrieval --eval-split 0.15
-```
-
-Full results JSON: [`data/eval/retrieval_results.json`](data/eval/retrieval_results.json).
-Training history: [`models/reranker-lora/training_history.json`](models/reranker-lora/training_history.json).
+Full results: [`data/eval/retrieval_results.json`](data/eval/retrieval_results.json).
+Training history: produced by [`ml/training/train_reranker.py`](ml/training/train_reranker.py).
 
 ---
 
@@ -138,29 +160,80 @@ Training history: [`models/reranker-lora/training_history.json`](models/reranker
 - Docker Desktop with WSL2
 - Node.js 20+
 - Python 3.11+ (via [uv](https://docs.astral.sh/uv/))
-- ~12GB free disk (models + Postgres + container images)
-- NVIDIA GPU with 6GB+ VRAM recommended (CPU fallback available, slower)
-
-**Quick start:**
+- ~12 GB free disk (models + Postgres + container images)
+- NVIDIA GPU with 6 GB+ VRAM recommended; CPU fallback available but slow
 
 ```bash
-git clone https://github.com/Ekansh1605/lastenheft.git
-cd lastenheft
-cp .env.example .env       # add your API keys (Anthropic / OpenAI)
-docker compose -f docker/docker-compose.yml up -d postgres langfuse-db langfuse
-uv sync                     # installs Python deps (torch+CUDA, ColPali, LangGraph, ...)
-uv run python scripts/prefetch_models.py    # downloads ColQwen2 (~6GB)
+# 1. Spin up infra
+git clone https://github.com/Ekansh1605/Lastenheft.git
+cd Lastenheft
+cp .env.example .env                          # add ANTHROPIC_API_KEY if you want hybrid mode
+docker compose -f docker/docker-compose.yml --env-file .env up -d \
+  postgres langfuse-db langfuse
+
+# 2. Python deps + models
+uv sync                                       # ~5 GB of ML deps (torch+cu124, ColPali, etc.)
+uv run python scripts/prefetch_models.py      # downloads ColPali ~5 GB + ColQwen2 fallback
+ollama pull qwen3:4b                          # sovereign default LLM (~2.5 GB)
+
+# 3. Corpus (15 PDFs auto-downloaded from Siemens / Bosch / Festo / TRUMPF / KUKA / SICK / SEW)
 uv run python scripts/download_sample_pdfs.py
 uv run python -m ml.ingest.cli ingest-dir data/pdfs
-uvicorn api.main:app --reload
-```
 
-In a second terminal:
-```bash
-cd web && pnpm install && pnpm dev
+# 4. (Optional) reproduce the eval numbers above
+uv run python -m ml.training.gen_synth_queries --sample 250 --hard-negs 5     # ~$4 API
+uv run python -m ml.training.train_reranker --epochs 3 --batch 4 --lr 2e-4   # ~2 hr RTX 3060
+uv run python -m ml.training.eval_retrieval --eval-split 0.15
+
+# 5. Run the API + UI
+uv run uvicorn api.main:app                    # backend on :8000
+cd web && npm install && npm run dev           # frontend on :3000
 ```
 
 Open http://localhost:3000.
+
+### Configuration knobs (env vars)
+
+| Var | Default | Effect |
+|---|---|---|
+| `ALLOW_API_LLM` | `true` | Set `false` in public deploys to force every request to local Qwen3 regardless of UI mode. Prevents API-cost drain if URL is scraped. |
+| `RATE_LIMIT_PER_MINUTE` | `10` | Per-IP throttle on `/query` and `/query/stream`. |
+| `AGENT_TIMEOUT_SECONDS` | `180` | Hard kill for hung agent runs. Returns 504. |
+| `CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Comma-separated allowlist. |
+| `OLLAMA_HOST` | `http://localhost:11434` | Local LLM endpoint. |
+| `OLLAMA_MODEL` | `qwen3:4b` | Local generation model. |
+| `DATABASE_URL` | `postgresql://lastenheft:lastenheft@localhost:5433/lastenheft` | Note port 5433 (5432 collides with system Postgres on many dev machines). |
+
+---
+
+## Production hardening checklist
+
+What I shipped that takes this past "portfolio demo" into something I'd put behind a paying customer:
+
+- ✅ Per-IP rate limiting (slowapi) with 429 + clear error
+- ✅ Hard agent timeout via `asyncio.wait_for` → 504 with actionable message
+- ✅ SSE client-disconnect detection → cancels GPU work mid-flight, sends `:keepalive` between chunks
+- ✅ LLM-provider fallback (API failure → local Qwen3, tagged in audit log)
+- ✅ UUID validation on all path/query params
+- ✅ `ALLOW_API_LLM` kill-switch for cost safety in public demos
+- ✅ Configurable CORS origins via env var
+- ✅ GDPR Article 17 right-to-erasure: per-query DELETE and full-session wipe
+- ✅ Idempotent ingestion (sha256 dedup, `ON CONFLICT DO UPDATE` on every write)
+- ✅ Audit log with provider / model / tokens / cost / latency per agent node
+- ✅ Audit log pagination (limit + offset, total count for UI footer)
+- ✅ Mobile-responsive UI (sidebar collapses to drawer < md)
+- ✅ Try/except around audit writes — auditing never breaks the user response
+- ✅ Schema migrations live in `docker/init-db/` (idempotent SQL)
+
+What I deliberately deferred (would ship for v1.0):
+
+- 🟡 Production auth (sessions are unsigned UUIDs — single-user demo only)
+- 🟡 Tenant isolation enforcement at row level (schema supports tenant_id; not enforced)
+- 🟡 Prompt-injection mitigation beyond input length cap
+- 🟡 Audit log CSV/JSON export endpoint (currently visible in dashboard only)
+- 🟡 Foreign key from `audit_events.query_id` → `queries.id` (currently joined by session_id)
+- 🟡 Background workers for ingest (currently inline; fine for 26 PDFs, breaks at 10k)
+- 🟡 Observability via Langfuse SDK (containers run, traces not yet emitted from agent nodes)
 
 ---
 
@@ -170,29 +243,21 @@ Open http://localhost:3000.
 
 | Brand | Domain | Docs |
 |-------|--------|------|
-| **Siemens SIMATIC** | Industrial automation / PLC | 7 (3 EN + 4 DE) |
-| **Festo** | Pneumatics (ISO 15552 cylinders) | 5 (3 EN + 2 DE) |
-| **SICK** | Industrial sensors (photoelectric, ultrasonic, laser) | 4 (EN) |
-| **TRUMPF** | Laser / CNC machine tools | 3 (EN — TruLaser 1030 / 2030 + systems brochure) |
-| **Bosch Rexroth** | Drives + hydraulic valves | 3 (EN — IndraDrive + directional + cartridge valves) |
-| **KUKA** | Industrial robotics | 1 (EN — full robot portfolio, 27 MB / ~100+ pages) |
-| **SEW Eurodrive** | Drives / Movigear | 1 (DE) |
-| **EU regulatory** | AI Act + Machinery Regulation | 2 (EN — 2024/1689 + 2023/1230) |
+| Siemens SIMATIC | Industrial automation / PLC | 7 (3 EN + 4 DE) |
+| Festo | Pneumatics (ISO 15552 cylinders) | 5 (3 EN + 2 DE) |
+| SICK | Industrial sensors | 4 (EN) |
+| TRUMPF | Laser / CNC machine tools | 3 (EN) |
+| Bosch Rexroth | Drives + hydraulic valves | 3 (EN) |
+| KUKA | Industrial robotics | 1 (EN, 27 MB / ~100+ pages) |
+| SEW Eurodrive | Drives / Movigear | 1 (DE) |
+| EU regulatory | AI Act + Machinery Regulation | 2 (EN) |
 
 URLs in [`scripts/download_sample_pdfs.py`](scripts/download_sample_pdfs.py). All sourced from publishers' public download portals — verified live May 2026.
 
 ---
 
-## Limitations & future work
-
-- **VRAM:** 6GB GPU shares VRAM between ColQwen2 and Qwen3 4B. Tight; works with quantization.
-- **Reranker training data:** Synthetic queries from GPT-4o. Real customer query logs would improve recall on niche technical jargon.
-- **PII detector:** Currently rule-based (Microsoft Presidio). A fine-tuned NER for German industrial PII would be next.
-- **No SAP/MES integration yet.** Most Mittelstand have SAP — connector would be production deployment work.
-- **Single-tenant in current MVP.** RLS schema is multi-tenant-ready; UI/billing is not.
-
----
-
 ## License
 
-MIT — built as a portfolio piece by [Ekansh Sharma](https://github.com/Ekansh1605).
+MIT — built as a portfolio piece by **[Ekansh Sharma](https://github.com/Ekansh1605)** ([linkedin.com/in/ekansh-sharma16](https://linkedin.com/in/ekansh-sharma16)).
+
+Targeting AI Engineer / ML Engineer / Data Scientist / Full-stack roles in the German industrial Mittelstand.
