@@ -33,6 +33,7 @@ from agents.audit import (
     persist_run,
 )
 from agents.graph import get_graph
+from agents.langfuse_client import log_span, trace as langfuse_trace
 
 log = logging.getLogger("lastenheft.api.query")
 
@@ -147,17 +148,26 @@ async def run_query(request: Request, req: QueryRequest) -> QueryResponse:
     graph = get_graph()
     initial = _build_initial(req)
     t0 = time.perf_counter()
-    try:
-        final = await asyncio.wait_for(
-            asyncio.to_thread(graph.invoke, initial),
-            timeout=AGENT_TIMEOUT,
-        )
-    except asyncio.TimeoutError:
-        raise HTTPException(
-            status_code=504,
-            detail=f"Agent timed out after {AGENT_TIMEOUT}s. Try a shorter query, switch sovereignty mode, or check that Ollama is reachable.",
-        )
-    total_ms = int((time.perf_counter() - t0) * 1000)
+    with langfuse_trace(
+        name="agent.run",
+        session_id=initial["session_id"],
+        metadata={"sovereignty_mode": req.sovereignty_mode, "query_preview": req.query[:120]},
+    ) as lf:
+        try:
+            final = await asyncio.wait_for(
+                asyncio.to_thread(graph.invoke, initial),
+                timeout=AGENT_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(
+                status_code=504,
+                detail=f"Agent timed out after {AGENT_TIMEOUT}s. Try a shorter query, switch sovereignty mode, or check that Ollama is reachable.",
+            )
+        total_ms = int((time.perf_counter() - t0) * 1000)
+        # Forward the same trace data that goes into the audit log to Langfuse
+        for ev in final.get("trace", []):
+            log_span(lf, name=ev["step"], latency_ms=ev.get("latency_ms", 0),
+                     output_data=ev.get("detail"), metadata=ev.get("payload"))
     query_id = persist_run(final, total_ms)
     return _to_response(final, total_ms, query_id)
 
@@ -231,6 +241,16 @@ async def run_query_stream(request: Request, req: QueryRequest):
 
         total_ms = int((time.perf_counter() - t0) * 1000)
         query_id = persist_run(last_state, total_ms)
+        # Forward to Langfuse after persistence so the trace carries the query_id
+        with langfuse_trace(
+            name="agent.run.stream",
+            session_id=last_state.get("session_id"),
+            metadata={"sovereignty_mode": req.sovereignty_mode, "query_id": query_id,
+                       "query_preview": req.query[:120]},
+        ) as lf:
+            for ev in last_state.get("trace", []):
+                log_span(lf, name=ev["step"], latency_ms=ev.get("latency_ms", 0),
+                         output_data=ev.get("detail"), metadata=ev.get("payload"))
         final = _to_response(last_state, total_ms, query_id).model_dump()
         yield f"event: done\ndata: {json.dumps(final, default=str, ensure_ascii=False)}\n\n"
 

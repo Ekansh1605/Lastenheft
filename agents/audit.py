@@ -84,19 +84,21 @@ def persist_run(state: dict[str, Any], total_latency_ms: int) -> str:
                 ),
             )
 
-            # One audit_events row per TraceEvent (Article 13 transparency log)
+            # One audit_events row per TraceEvent. Tagged with query_id so DELETE
+            # cascades and replay can fetch the exact trace for this query.
             for ev in state.get("trace") or []:
                 payload = dict(ev.get("payload") or {})
                 cur.execute(
                     """
                     INSERT INTO audit_events (
-                        tenant_id, user_id, session_id, event_type, payload,
+                        tenant_id, user_id, session_id, query_id, event_type, payload,
                         llm_provider, llm_model, token_input, token_output,
                         cost_usd, latency_ms
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
-                        tenant_id, user_id, session_id, ev.get("step", "unknown"),
+                        tenant_id, user_id, session_id, query_id,
+                        ev.get("step", "unknown"),
                         json.dumps({"detail": ev.get("detail"), **payload}),
                         payload.get("provider"),
                         payload.get("model"),
@@ -178,29 +180,39 @@ def audit_log(limit: int = 200, offset: int = 0) -> dict[str, Any]:
 
 def audit_events_for_session(session_id: str, around_query_id: str | None = None,
                              limit: int = 20) -> list[dict[str, Any]]:
-    """Return the most recent N audit_events for a session, filtered down to the
-    burst surrounding a specific query if `around_query_id` is provided.
+    """Return audit_events for a specific query (preferred) or session.
 
-    This is used by the /query/{id} replay endpoint so the UI can show the
-    full agent trace for a past query, not just the summary."""
+    Prefers the FK lookup via query_id when provided — exact match, no time-window
+    guesses. Falls back to most-recent-N for the session when no query_id is given
+    (e.g. live monitoring view).
+    """
     with get_pool().connection() as conn, conn.cursor() as cur:
-        # We rely on per-run audit_events landing in tight time windows; pull
-        # the most recent N for this session as a reasonable approximation
-        # when we don't yet have a foreign key from audit_events -> queries.
-        cur.execute(
-            """
-            SELECT event_type, payload, latency_ms
-            FROM audit_events
-            WHERE session_id = %s
-            ORDER BY created_at DESC
-            LIMIT %s
-            """,
-            (session_id, limit),
-        )
+        if around_query_id:
+            cur.execute(
+                """
+                SELECT event_type, payload, latency_ms
+                FROM audit_events
+                WHERE query_id = %s
+                ORDER BY created_at ASC
+                """,
+                (around_query_id,),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT event_type, payload, latency_ms
+                FROM audit_events
+                WHERE session_id = %s
+                ORDER BY created_at DESC
+                LIMIT %s
+                """,
+                (session_id, limit),
+            )
         rows = cur.fetchall()
-    # Reverse to chronological for the UI timeline
+    if not around_query_id:
+        rows = list(reversed(rows))  # chronological for the timeline
     out: list[dict[str, Any]] = []
-    for row in reversed(rows):
+    for row in rows:
         event_type, payload, latency_ms = row
         payload = payload or {}
         out.append({
@@ -214,19 +226,16 @@ def audit_events_for_session(session_id: str, around_query_id: str | None = None
 
 def delete_query(query_id: str) -> bool:
     """GDPR Art. 17 right-to-erasure on a single query.
-    Returns True if a row was actually deleted."""
+
+    The FK from audit_events.query_id -> queries.id has ON DELETE CASCADE,
+    so removing the queries row sweeps its audit_events too — exactly what
+    the right-to-erasure obligation requires.
+    """
     with get_pool().connection() as conn, conn.cursor() as cur:
-        cur.execute("SELECT session_id::text FROM queries WHERE id::text = %s", (query_id,))
-        row = cur.fetchone()
-        if not row:
-            return False
-        # We also remove the audit_events that this query produced.
-        # Since audit_events don't have a query_id FK, we delete by session+time-window:
-        # the safe approach for now is to just delete this query and leave audit
-        # events (they're aggregate observability). Full FK would be a Day 5 task.
-        cur.execute("DELETE FROM queries WHERE id::text = %s", (query_id,))
+        cur.execute("DELETE FROM queries WHERE id::text = %s RETURNING id", (query_id,))
+        deleted = cur.fetchone() is not None
         conn.commit()
-    return True
+    return deleted
 
 
 def delete_session(session_id: str) -> int:
