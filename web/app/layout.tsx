@@ -4,6 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 import { BrandMark } from "@/components/brand-mark";
 import { NavLink } from "@/components/nav-link";
+import { PageShell } from "@/components/page-shell";
 import { SystemStatus } from "@/components/system-status";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -73,13 +74,16 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* Spacer for fixed header height */}
         <div className="h-16 flex-shrink-0" aria-hidden />
 
-        <main className="flex-1">{children}</main>
+        {/* PageShell adds md:pl-72 on routes that render a sidebar (currently
+            only '/'), so the footer and main never disappear under it. */}
+        <PageShell>
+          <main className="flex-1">{children}</main>
 
-        {/* --------------- FOOTER --------------- */}
-        <footer
-          className="border-t mt-12"
-          style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-        >
+          {/* --------------- FOOTER --------------- */}
+          <footer
+            className="border-t mt-12"
+            style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+          >
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -139,6 +143,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </div>
           </div>
         </footer>
+        </PageShell>
       </body>
     </html>
   );

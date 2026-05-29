@@ -223,8 +223,10 @@ export default function Home() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Main content — pl-72 on desktop to clear the fixed sidebar */}
-      <div className="md:pl-72 min-w-0">
+      {/* The fixed-sidebar clearance now lives in <PageShell> in layout.tsx
+          (so the footer also clears the sidebar). This wrapper just keeps
+          the content from going below its min usable width. */}
+      <div className="min-w-0">
         <div className="mx-auto max-w-3xl px-4 sm:px-8 py-8 sm:py-12 space-y-8">
 
           {/* Top bar (mobile menu + session actions) */}
