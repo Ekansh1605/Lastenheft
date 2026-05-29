@@ -124,18 +124,34 @@ def main() -> int:
         "reference": r["reference"],
     } for r in rows])
 
-    # RAGAS judge LLM + embeddings. Use Claude Sonnet (we already have key).
+    # RAGAS judge LLM + embeddings.
+    # LLM: Claude Sonnet (we already have key).
+    # Embeddings: prefer local BGE-multilingual via HuggingFace (no extra key needed,
+    # stays on-prem matching the project's sovereignty story). Falls back to OpenAI
+    # embeddings if the user has set a real OPENAI_API_KEY.
     import os
     if os.getenv("ANTHROPIC_API_KEY"):
         judge_llm = LangchainLLMWrapper(ChatAnthropic(model="claude-sonnet-4-6", temperature=0.0))
     else:
         judge_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o-mini", temperature=0.0))
-    judge_embed = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small")) \
-        if os.getenv("OPENAI_API_KEY") else None
 
-    metrics = [faithfulness, answer_relevancy]
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+    if openai_key and not openai_key.startswith("sk-..."):
+        judge_embed = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-small"))
+    else:
+        try:
+            from langchain_huggingface import HuggingFaceEmbeddings
+            judge_embed = LangchainEmbeddingsWrapper(
+                HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+            )
+            console.print("[dim]Using local HuggingFace embeddings for RAGAS (no OpenAI key needed)[/]")
+        except ImportError:
+            console.print("[yellow]No embedding model available; answer_relevancy + context_precision will be NaN[/]")
+            judge_embed = None
+
+    metrics = [faithfulness]
     if judge_embed:
-        metrics.append(context_precision)
+        metrics.extend([answer_relevancy, context_precision])
 
     result = evaluate(ds, metrics=metrics, llm=judge_llm, embeddings=judge_embed,
                       raise_exceptions=False)

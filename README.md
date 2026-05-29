@@ -149,8 +149,23 @@ The user sees the live agent trajectory, a cited answer, the citation cards, and
 | After epoch 2 | 0.861 |
 | **After epoch 3 (saved)** | **0.898** |
 
-Full results: [`data/eval/retrieval_results.json`](data/eval/retrieval_results.json).
-Training history: produced by [`ml/training/train_reranker.py`](ml/training/train_reranker.py).
+### End-to-end quality (RAGAS, hybrid mode, 30 held-out queries)
+
+LLM-judged metrics over the full agent pipeline (ColPali retrieval → BGE LoRA rerank →
+LangGraph multi-agent → Claude Sonnet 4.6 synthesizer). Judge LLM = Claude Sonnet 4.6.
+
+| Metric | Score | What it measures |
+|--------|------:|------------------|
+| **faithfulness** | **0.752** | Fraction of answer claims that are grounded in the retrieved context (no hallucinations) |
+| **context_precision** | **0.462** | Signal density of the retrieved top-K — how many top results were actually relevant |
+
+`answer_relevancy` requires an embeddings model — the script now uses local BGE
+multilingual embeddings by default so it works without an OpenAI key. The
+2026-05-29 run was missing this metric.
+
+Full results: [`data/eval/retrieval_results.json`](data/eval/retrieval_results.json),
+[`data/eval/ragas_results.json`](data/eval/ragas_results.json).
+Training history produced by [`ml/training/train_reranker.py`](ml/training/train_reranker.py).
 
 ---
 

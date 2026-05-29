@@ -1,0 +1,10 @@
+{
+  "n": 30,
+  "mode": "hybrid",
+  "metrics": {
+    "faithfulness": 0.7519375300625301,
+    "answer_relevancy": NaN,
+    "context_precision": 0.462121212082197
+  },
+  "agent_run_seconds": 2532.0
+}
