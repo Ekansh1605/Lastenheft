@@ -81,18 +81,54 @@ Next.js 15 frontend  ──►  FastAPI orchestration  ──►  LangGraph mult
 
 ---
 
-## Eval results (Day 2-3 work — will be filled in)
+## Eval results
 
-| Metric | Off-the-shelf | LoRA fine-tuned | Δ |
-|--------|---------------|-----------------|---|
-| Retrieval nDCG@10 | TBD | TBD | TBD |
-| Retrieval MRR | TBD | TBD | TBD |
-| RAGAS faithfulness | TBD | TBD | TBD |
-| RAGAS answer relevancy | TBD | TBD | TBD |
-| RAGAS context precision | TBD | TBD | TBD |
-| Latency p50 (local LLM) | TBD | TBD | TBD |
-| Latency p50 (API LLM) | TBD | TBD | TBD |
-| Cost per query (API) | TBD | TBD | TBD |
+**Setup:** 26 industrial PDFs across 8 Mittelstand brands (Siemens, Festo, Bosch Rexroth, TRUMPF, KUKA, SICK, SEW Eurodrive + EU regulatory). 909 pages indexed via ColPali v1.3 multi-vector visual embeddings. 714 synthetic DE+EN technical query-passage pairs generated via Claude Sonnet 4.6, stratified across brands, with hard negatives mined via ColPali ANN. BGE-reranker-v2-m3 fine-tuned with LoRA (rank 16, ~2.6M trainable params, 0.46% of 570M base) for 3 epochs on 606 train / 108 held-out eval queries.
+
+### Retrieval (full-corpus eval, 108 held-out queries, 909 candidate pages)
+
+| Strategy | MRR | Hit@1 | Hit@5 | Hit@10 | nDCG@10 | median rank |
+|----------|-----:|------:|------:|-------:|--------:|------------:|
+| ColPali ANN only (baseline) | 0.341 | 20.4% | 45.4% | 61.1% | 0.395 | 3 |
+| + BGE reranker (off-the-shelf) | 0.707 | 62.0% | 83.3% | 85.2% | 0.743 | 1 |
+| + **BGE reranker (LoRA fine-tuned)** | **0.758** | **70.4%** | 82.4% | **85.2%** | **0.781** | **1** |
+
+**LoRA fine-tune delta over off-the-shelf reranker: +5.1 pts MRR, +8.4 pts Hit@1, +3.8 pts nDCG@10.** The fine-tune learned to push the correct page to position 1 more confidently — exactly the property a citation-overlay UI cares about.
+
+### In-training listwise accuracy (positive vs 4 hard negatives)
+
+| Stage | Accuracy |
+|-------|---------:|
+| BGE-reranker-v2-m3 baseline | 0.843 |
+| After epoch 1 | 0.889 |
+| After epoch 2 | 0.861 |
+| **After epoch 3 (saved)** | **0.898** |
+
+### Reproducibility
+
+```bash
+# 1. Spin up infra
+docker compose -f docker/docker-compose.yml --env-file .env up -d
+uv sync
+
+# 2. Download corpus + ingest
+uv run python scripts/download_sample_pdfs.py
+uv run python -m ml.ingest.cli ingest-dir data/pdfs
+
+# 3. Generate synthetic training data (requires ANTHROPIC_API_KEY, ~$4)
+uv run python -m ml.training.gen_synth_queries --sample 250 --hard-negs 5
+
+# 4. Train reranker (1.5-2 hr on RTX 3060 6GB)
+uv run python -m ml.training.train_reranker \
+    --synth data/eval/synth_queries.jsonl \
+    --epochs 3 --batch 4 --lr 2e-4 --max-negs 4
+
+# 5. Evaluate (15 min)
+uv run python -m ml.training.eval_retrieval --eval-split 0.15
+```
+
+Full results JSON: [`data/eval/retrieval_results.json`](data/eval/retrieval_results.json).
+Training history: [`models/reranker-lora/training_history.json`](models/reranker-lora/training_history.json).
 
 ---
 

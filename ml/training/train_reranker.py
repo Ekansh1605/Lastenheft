@@ -104,19 +104,24 @@ def load_synth_dataset(path: Path, max_negs: int = 4) -> list[Example]:
     texts = fetch_page_texts(list(all_page_ids))
 
     examples: list[Example] = []
-    skipped = 0
+    skipped_pos = skipped_neg = 0
     for r in records:
         pos = texts.get(r["positive_page_id"], "").strip()
         if not pos:
-            skipped += 1
+            skipped_pos += 1
             continue
-        negs = [texts.get(nid, "").strip() for nid in r.get("negative_page_ids", [])[:max_negs]]
-        negs = [n for n in negs if n]
-        if not negs:
-            skipped += 1
+        # Only keep negatives with substantive text. Pull more than needed so we can
+        # backfill if some are empty, then require exactly max_negs after filtering.
+        all_neg_ids = r.get("negative_page_ids", [])
+        negs = [t.strip() for t in (texts.get(nid, "") for nid in all_neg_ids) if t.strip()]
+        if len(negs) < max_negs:
+            skipped_neg += 1
             continue
-        examples.append(Example(query=r["query"], positive_text=pos, negative_texts=negs))
-    console.print(f"Loaded {len(examples)} examples (skipped {skipped} for empty text)")
+        examples.append(Example(query=r["query"], positive_text=pos,
+                                negative_texts=negs[:max_negs]))
+    console.print(f"Loaded {len(examples)} examples "
+                  f"(skipped {skipped_pos} for empty positive, "
+                  f"{skipped_neg} for <{max_negs} valid negatives)")
     return examples
 
 
