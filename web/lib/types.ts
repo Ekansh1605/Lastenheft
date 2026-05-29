@@ -20,6 +20,8 @@ export interface TraceEvent {
 }
 
 export interface QueryResponse {
+  query_id: string;
+  user_query: string;
   answer: string;
   citations: Citation[];
   llm_provider: string;
@@ -35,6 +37,33 @@ export interface QueryResponse {
   trace: TraceEvent[];
 }
 
+export interface HistoryItem {
+  id: string;
+  user_query: string;
+  llm_provider: string;
+  llm_model: string;
+  sovereignty_mode: SovereigntyMode;
+  cost_usd: number;
+  latency_ms: number;
+  created_at: string;
+}
+
+export interface ReplayedQuery {
+  query_id: string;
+  session_id: string;
+  user_query: string;
+  planner: { sub_queries?: string[]; complexity?: number; rationale?: string } | null;
+  retrieved_pages: { page_id?: string; filename?: string; page_number?: number; score?: number }[];
+  answer: string;
+  llm_provider: string;
+  llm_model: string;
+  sovereignty_mode: SovereigntyMode;
+  confidence: number;
+  latency_ms: number;
+  cost_usd: number;
+  created_at: string;
+}
+
 export interface RiskClassification {
   component: string;
   category: "minimal" | "limited" | "high" | "unacceptable";
@@ -43,6 +72,16 @@ export interface RiskClassification {
   mitigations: string[];
 }
 
-export type StreamUpdate =
-  | { type: "node"; node: string; trace: TraceEvent[]; partial_answer?: string; citations?: Citation[] }
-  | { type: "done"; final: QueryResponse };
+export interface AuditEvent {
+  id: string;
+  session_id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  llm_provider: string | null;
+  llm_model: string | null;
+  token_input: number | null;
+  token_output: number | null;
+  cost_usd: number | null;
+  latency_ms: number | null;
+  created_at: string;
+}

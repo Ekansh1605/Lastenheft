@@ -29,7 +29,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50"
+      >
         <header className="border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
             <Link href="/" className="font-semibold tracking-tight flex items-center gap-2">

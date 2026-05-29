@@ -1,21 +1,11 @@
 // Thin client for the Lastenheft FastAPI backend.
 
-import type { Citation, QueryResponse, RiskClassification, SovereigntyMode, TraceEvent } from "./types";
+import type {
+  AuditEvent, Citation, HistoryItem, QueryResponse, ReplayedQuery,
+  RiskClassification, SovereigntyMode, TraceEvent,
+} from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
-
-export async function runQuery(
-  query: string,
-  sovereigntyMode: SovereigntyMode,
-): Promise<QueryResponse> {
-  const r = await fetch(`${API_BASE}/query`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, sovereignty_mode: sovereigntyMode }),
-  });
-  if (!r.ok) throw new Error(`API ${r.status}: ${await r.text()}`);
-  return r.json();
-}
 
 export interface StreamHandlers {
   onNode?: (node: string, trace: TraceEvent[], citations?: Citation[]) => void;
@@ -23,15 +13,10 @@ export interface StreamHandlers {
   onError?: (err: Error) => void;
 }
 
-/**
- * SSE stream of agent node updates. Returns an abort function.
- *
- * Each "data:" event is a JSON payload with type="node" while nodes are running,
- * and a final "event: done" message carries the full QueryResponse.
- */
 export function streamQuery(
   query: string,
   sovereigntyMode: SovereigntyMode,
+  sessionId: string,
   handlers: StreamHandlers,
 ): () => void {
   const controller = new AbortController();
@@ -41,7 +26,11 @@ export function streamQuery(
       const r = await fetch(`${API_BASE}/query/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, sovereignty_mode: sovereigntyMode }),
+        body: JSON.stringify({
+          query,
+          sovereignty_mode: sovereigntyMode,
+          session_id: sessionId,
+        }),
         signal: controller.signal,
       });
       if (!r.body) throw new Error("no response body");
@@ -55,8 +44,6 @@ export function streamQuery(
         const { value, done } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-
-        // SSE events are separated by blank lines
         const parts = buffer.split("\n\n");
         buffer = parts.pop() ?? "";
         for (const raw of parts) {
@@ -80,13 +67,23 @@ export function streamQuery(
         }
       }
     } catch (e) {
-      if ((e as Error).name !== "AbortError") {
-        handlers.onError?.(e as Error);
-      }
+      if ((e as Error).name !== "AbortError") handlers.onError?.(e as Error);
     }
   })();
 
   return () => controller.abort();
+}
+
+export async function fetchHistory(sessionId: string): Promise<HistoryItem[]> {
+  const r = await fetch(`${API_BASE}/query/history?session_id=${encodeURIComponent(sessionId)}`);
+  if (!r.ok) throw new Error(`API ${r.status}`);
+  return r.json();
+}
+
+export async function fetchQuery(queryId: string): Promise<ReplayedQuery> {
+  const r = await fetch(`${API_BASE}/query/${encodeURIComponent(queryId)}`);
+  if (!r.ok) throw new Error(`API ${r.status}`);
+  return r.json();
 }
 
 export async function fetchRiskClassifications(): Promise<RiskClassification[]> {
@@ -95,8 +92,8 @@ export async function fetchRiskClassifications(): Promise<RiskClassification[]> 
   return r.json();
 }
 
-export async function fetchAuditLog(): Promise<unknown> {
-  const r = await fetch(`${API_BASE}/compliance/audit-log`);
+export async function fetchAuditLog(limit = 100): Promise<{ events: AuditEvent[]; total: number }> {
+  const r = await fetch(`${API_BASE}/compliance/audit-log?limit=${limit}`);
   if (!r.ok) throw new Error(`API ${r.status}`);
   return r.json();
 }
