@@ -241,10 +241,11 @@ export function SidebarHistory({
           ))}
         </div>
 
-        {/* Footer count */}
+        {/* Footer count — height matched to the right footer's bottom strip
+            (py-3) so the two read as one continuous bar across the bottom. */}
         {items.length > 0 && (
           <div
-            className="border-t px-3 py-2 text-[10px] font-mono tabular-nums flex items-center justify-between"
+            className="border-t px-4 py-3 text-[10px] font-mono tabular-nums flex items-center justify-between"
             style={{ borderColor: "var(--border)", color: "var(--text-subtle)" }}
           >
             <span>{items.length} {items.length === 1 ? "query" : "queries"}</span>
