@@ -78,7 +78,9 @@ export function SidebarHistory({
       <aside
         className={[
           "w-72 flex-shrink-0 border-r flex flex-col",
-          "md:sticky md:top-16 md:h-[calc(100vh-4rem)]",
+          // Desktop: pinned to the viewport below the fixed 64px header
+          "md:fixed md:left-0 md:top-16 md:bottom-0 md:h-[calc(100vh-4rem)] md:z-30",
+          // Mobile: full-height drawer that slides in from the left
           "fixed top-0 left-0 h-full z-40 transition-transform duration-200",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         ].join(" ")}

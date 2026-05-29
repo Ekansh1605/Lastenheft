@@ -212,7 +212,7 @@ export default function Home() {
   const hasResult = !!result || trace.length > 0 || inFlight;
 
   return (
-    <div className="flex">
+    <div>
       <SidebarHistory
         items={history}
         activeId={activeQueryId}
@@ -223,7 +223,8 @@ export default function Home() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex-1 min-w-0">
+      {/* Main content — pl-72 on desktop to clear the fixed sidebar */}
+      <div className="md:pl-72 min-w-0">
         <div className="mx-auto max-w-3xl px-4 sm:px-8 py-8 sm:py-12 space-y-8">
 
           {/* Top bar (mobile menu + session actions) */}
