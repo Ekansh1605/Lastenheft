@@ -28,9 +28,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       >
         {/* --------------- HEADER (fixed) --------------- */}
         <header
-          className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md"
+          className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl"
           style={{
-            background: "color-mix(in srgb, var(--surface) 92%, transparent)",
+            background: "color-mix(in srgb, var(--background) 80%, transparent)",
             borderColor: "var(--border)",
           }}
         >
