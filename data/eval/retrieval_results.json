@@ -1,0 +1,32 @@
+{
+  "baseline": {
+    "n_queries": 108,
+    "mrr": 0.0031,
+    "hit@1": 0.0,
+    "hit@5": 0.0,
+    "hit@10": 0.0093,
+    "ndcg@10": 0.0027,
+    "median_rank": 0,
+    "misses": 102
+  },
+  "base_rerank": {
+    "n_queries": 108,
+    "mrr": 0.0556,
+    "hit@1": 0.0556,
+    "hit@5": 0.0556,
+    "hit@10": 0.0556,
+    "ndcg@10": 0.0556,
+    "median_rank": 0,
+    "misses": 102
+  },
+  "lora_rerank": {
+    "n_queries": 108,
+    "mrr": 0.0509,
+    "hit@1": 0.0463,
+    "hit@5": 0.0556,
+    "hit@10": 0.0556,
+    "ndcg@10": 0.0521,
+    "median_rank": 0,
+    "misses": 102
+  }
+}

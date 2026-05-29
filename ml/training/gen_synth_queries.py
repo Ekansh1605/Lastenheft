@@ -47,6 +47,9 @@ from typing import Any
 # Ensure repo root is on path when invoked as a script
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
+from dotenv import load_dotenv
+load_dotenv()  # pick up ANTHROPIC_API_KEY / OPENAI_API_KEY from .env
+
 from rich.console import Console
 from rich.progress import (
     BarColumn,

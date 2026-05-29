@@ -10,17 +10,15 @@ dependencies = [
     # Core ML / DL
     "torch>=2.5.0",
     "torchvision>=0.20.0",
-    "transformers>=4.46.0",
+    "transformers>=4.46.0,<5.0",   # ColPali v1.3 incompatible with transformers 5.x (LoRA layer name change)
     "accelerate>=1.1.0",
     "sentence-transformers>=3.3.0",
     "peft>=0.13.0",
-
     # Multimodal RAG
-    "colpali-engine>=0.3.4",
+    "colpali-engine>=0.3.10",
     "pdf2image>=1.17.0",
     "pypdfium2>=4.30.0",
     "pillow>=11.0.0",
-
     # LLM orchestration
     "langchain>=0.3.7",
     "langchain-community>=0.3.5",
@@ -29,7 +27,6 @@ dependencies = [
     "langgraph>=0.2.50",
     "anthropic>=0.39.0",
     "openai>=1.54.0",
-
     # API + DB
     "fastapi>=0.115.4",
     "uvicorn[standard]>=0.32.0",
@@ -38,12 +35,10 @@ dependencies = [
     "pgvector>=0.3.6",
     "sqlalchemy>=2.0.36",
     "alembic>=1.14.0",
-
     # Eval + observability
     "ragas>=0.2.6",
     "langfuse>=2.55.0",
     "datasets>=3.1.0",
-
     # Utilities
     "python-dotenv>=1.0.1",
     "httpx>=0.27.2",

@@ -39,6 +39,9 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import torch
 from peft import PeftModel
 from rich.console import Console
