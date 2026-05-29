@@ -167,8 +167,18 @@ def _call_ollama(prompt: str, model: str, system: str | None,
 
 # ---------------- router ----------------
 
+def _api_llm_allowed() -> bool:
+    """Hard kill-switch. When false, ALL sovereignty modes downgrade to local.
+    Set ALLOW_API_LLM=false in public deploys to prevent API cost drain."""
+    return os.getenv("ALLOW_API_LLM", "true").lower() not in ("false", "0", "no")
+
+
 def pick_provider(sovereignty_mode: str, needs_escalation: bool) -> tuple[Provider, str]:
     """Decide which provider + model to use. Logged for AI Act Art. 13 transparency."""
+    if not _api_llm_allowed():
+        if sovereignty_mode != "local-only":
+            log.info("ALLOW_API_LLM=false; forcing local-only despite mode=%s", sovereignty_mode)
+        return "ollama-local", os.getenv("OLLAMA_MODEL", "qwen3:4b")
     if sovereignty_mode == "local-only":
         return "ollama-local", os.getenv("OLLAMA_MODEL", "qwen3:4b")
     if sovereignty_mode == "api-only":
@@ -189,12 +199,35 @@ def pick_provider(sovereignty_mode: str, needs_escalation: bool) -> tuple[Provid
 
 def generate(prompt: str, sovereignty_mode: str, needs_escalation: bool = False,
              system: str | None = None, max_tokens: int = 800) -> LLMResponse:
-    """Route to the chosen provider and run a single generation."""
+    """Route to the chosen provider and run a single generation.
+
+    If an API provider fails (invalid key, rate limit, network), fall back to
+    Ollama-local so the user gets *some* answer rather than a stack trace.
+    Every fallback is logged so the audit trail still tells the truth.
+    """
     provider, model = pick_provider(sovereignty_mode, needs_escalation)
     log.info("routing -> provider=%s model=%s escalation=%s mode=%s",
              provider, model, needs_escalation, sovereignty_mode)
-    if provider == "anthropic":
-        return _call_anthropic(prompt, model, system, max_tokens)
-    if provider == "openai":
-        return _call_openai(prompt, model, system, max_tokens)
-    return _call_ollama(prompt, model, system, max_tokens)
+    try:
+        if provider == "anthropic":
+            return _call_anthropic(prompt, model, system, max_tokens)
+        if provider == "openai":
+            return _call_openai(prompt, model, system, max_tokens)
+        return _call_ollama(prompt, model, system, max_tokens)
+    except Exception as e:  # noqa: BLE001 — fallback is the point
+        if provider == "ollama-local":
+            raise  # local already failed; nothing better to try
+        log.warning("LLM provider %s failed (%s) — falling back to ollama-local",
+                    provider, type(e).__name__)
+        fallback_model = os.getenv("OLLAMA_MODEL", "qwen3:4b")
+        resp = _call_ollama(prompt, fallback_model, system, max_tokens)
+        # Tag the response so the audit log reflects that this was a fallback
+        return LLMResponse(
+            text=resp.text,
+            provider="ollama-local",
+            model=f"{fallback_model} (fallback from {provider})",
+            input_tokens=resp.input_tokens,
+            output_tokens=resp.output_tokens,
+            cost_usd=resp.cost_usd,
+            latency_ms=resp.latency_ms,
+        )

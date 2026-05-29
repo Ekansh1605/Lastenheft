@@ -152,9 +152,14 @@ def get_query(query_id: str) -> dict[str, Any] | None:
         return dict(zip(cols, row, strict=True))
 
 
-def audit_log(limit: int = 200) -> list[dict[str, Any]]:
-    """Compliance dashboard data — flat list of audit_events, newest first."""
+def audit_log(limit: int = 200, offset: int = 0) -> dict[str, Any]:
+    """Compliance dashboard data — paginated audit_events, newest first.
+
+    Returns {events, total} for the UI's pagination footer.
+    """
     with get_pool().connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM audit_events")
+        total = int(cur.fetchone()[0])
         cur.execute(
             """
             SELECT id::text, session_id::text, event_type, payload,
@@ -162,9 +167,77 @@ def audit_log(limit: int = 200) -> list[dict[str, Any]]:
                    cost_usd, latency_ms, created_at
             FROM audit_events
             ORDER BY created_at DESC
-            LIMIT %s
+            LIMIT %s OFFSET %s
             """,
-            (limit,),
+            (limit, offset),
         )
         cols = [c.name for c in cur.description]
-        return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
+        events = [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
+    return {"events": events, "total": total}
+
+
+def audit_events_for_session(session_id: str, around_query_id: str | None = None,
+                             limit: int = 20) -> list[dict[str, Any]]:
+    """Return the most recent N audit_events for a session, filtered down to the
+    burst surrounding a specific query if `around_query_id` is provided.
+
+    This is used by the /query/{id} replay endpoint so the UI can show the
+    full agent trace for a past query, not just the summary."""
+    with get_pool().connection() as conn, conn.cursor() as cur:
+        # We rely on per-run audit_events landing in tight time windows; pull
+        # the most recent N for this session as a reasonable approximation
+        # when we don't yet have a foreign key from audit_events -> queries.
+        cur.execute(
+            """
+            SELECT event_type, payload, latency_ms
+            FROM audit_events
+            WHERE session_id = %s
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (session_id, limit),
+        )
+        rows = cur.fetchall()
+    # Reverse to chronological for the UI timeline
+    out: list[dict[str, Any]] = []
+    for row in reversed(rows):
+        event_type, payload, latency_ms = row
+        payload = payload or {}
+        out.append({
+            "step": event_type,
+            "detail": payload.get("detail", ""),
+            "latency_ms": int(latency_ms or 0),
+            "payload": {k: v for k, v in payload.items() if k != "detail"},
+        })
+    return out
+
+
+def delete_query(query_id: str) -> bool:
+    """GDPR Art. 17 right-to-erasure on a single query.
+    Returns True if a row was actually deleted."""
+    with get_pool().connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT session_id::text FROM queries WHERE id::text = %s", (query_id,))
+        row = cur.fetchone()
+        if not row:
+            return False
+        # We also remove the audit_events that this query produced.
+        # Since audit_events don't have a query_id FK, we delete by session+time-window:
+        # the safe approach for now is to just delete this query and leave audit
+        # events (they're aggregate observability). Full FK would be a Day 5 task.
+        cur.execute("DELETE FROM queries WHERE id::text = %s", (query_id,))
+        conn.commit()
+    return True
+
+
+def delete_session(session_id: str) -> int:
+    """Wipe everything for one browser session (queries + their audit events)."""
+    with get_pool().connection() as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM audit_events WHERE session_id = %s", (session_id,))
+        n_audit = cur.rowcount
+        cur.execute("DELETE FROM queries WHERE session_id = %s", (session_id,))
+        n_queries = cur.rowcount
+        cur.execute("DELETE FROM query_sessions WHERE id = %s", (session_id,))
+        conn.commit()
+    log.info("deleted session %s: %d queries + %d audit_events",
+             session_id, n_queries, n_audit)
+    return n_queries

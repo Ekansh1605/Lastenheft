@@ -47,10 +47,12 @@ async def list_risk_classifications() -> list[RiskClassification]:
 
 
 @router.get("/audit-log")
-async def get_audit_log(limit: int = Query(100, ge=1, le=500)) -> dict[str, object]:
-    """Flat audit_events log for the compliance dashboard."""
-    events = audit_log(limit=limit)
-    # Normalize timestamps to ISO strings for JSON serialization
-    for e in events:
+async def get_audit_log(
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+) -> dict[str, object]:
+    """Paginated audit_events log for the compliance dashboard."""
+    result = audit_log(limit=limit, offset=offset)
+    for e in result["events"]:
         e["created_at"] = str(e["created_at"])
-    return {"events": events, "total": len(events)}
+    return result

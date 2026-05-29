@@ -6,13 +6,15 @@ import { AnswerDisplay } from "@/components/answer-display";
 import { CitationCard } from "@/components/citation-card";
 import { SidebarHistory } from "@/components/sidebar-history";
 import { SovereigntyToggle } from "@/components/sovereignty-toggle";
-import { fetchHistory, fetchQuery, streamQuery } from "@/lib/api";
+import {
+  deleteQuery, deleteSession, fetchHistory, fetchQuery, streamQuery,
+} from "@/lib/api";
 import { getSessionId, newSessionId } from "@/lib/session";
 import type {
   Citation, HistoryItem, QueryResponse, ReplayedQuery,
   SovereigntyMode, TraceEvent,
 } from "@/lib/types";
-import { Send, Loader2, RotateCcw } from "lucide-react";
+import { Send, Loader2, RotateCcw, Menu } from "lucide-react";
 
 const EXAMPLES = [
   "What is the maximum sheet thickness for stainless steel on the TruLaser 2030 fiber?",
@@ -22,8 +24,6 @@ const EXAMPLES = [
 ];
 
 function replayToResponse(r: ReplayedQuery): QueryResponse {
-  // Rebuild a minimal QueryResponse from the persisted record so the same
-  // display components can render historical queries.
   return {
     query_id: r.query_id,
     user_query: r.user_query,
@@ -46,7 +46,7 @@ function replayToResponse(r: ReplayedQuery): QueryResponse {
     cost_usd: r.cost_usd,
     total_latency_ms: r.latency_ms,
     session_id: r.session_id,
-    trace: [],
+    trace: r.trace ?? [],
   };
 }
 
@@ -54,6 +54,7 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string>("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeQueryId, setActiveQueryId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);  // mobile drawer state
 
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SovereigntyMode>("hybrid");
@@ -65,7 +66,6 @@ export default function Home() {
   const [abort, setAbort] = useState<(() => void) | null>(null);
   const [replayMode, setReplayMode] = useState(false);
 
-  // Init session on mount
   useEffect(() => {
     const id = getSessionId();
     setSessionId(id);
@@ -76,7 +76,7 @@ export default function Home() {
       const items = await fetchHistory(id);
       setHistory(items);
     } catch {
-      // Backend may be down — leave empty history silently
+      // backend may be down — leave silent
     }
   }, []);
 
@@ -88,7 +88,6 @@ export default function Home() {
     (e?: React.FormEvent) => {
       e?.preventDefault();
       if (!query.trim() || inFlight || !sessionId) return;
-
       setReplayMode(false);
       setActiveQueryId(null);
       setTrace([]);
@@ -138,14 +137,45 @@ export default function Home() {
     setError(null);
     setActiveQueryId(null);
     setReplayMode(false);
+    setSidebarOpen(false);
   }, [onCancel]);
 
-  const onNewSession = useCallback(() => {
+  const onNewSession = useCallback(async () => {
+    if (!confirm("Start a brand-new session?\n\nYour current sidebar will be cleared (the data stays in the audit log).")) {
+      return;
+    }
     const id = newSessionId();
     setSessionId(id);
     setHistory([]);
     onNewQuery();
   }, [onNewQuery]);
+
+  const onDeleteHistoryItem = useCallback(
+    async (id: string) => {
+      try {
+        await deleteQuery(id);
+        setHistory((prev) => prev.filter((h) => h.id !== id));
+        if (activeQueryId === id) onNewQuery();
+      } catch (e) {
+        setError(`Delete failed: ${(e as Error).message}`);
+      }
+    },
+    [activeQueryId, onNewQuery],
+  );
+
+  const onWipeSession = useCallback(async () => {
+    if (!sessionId) return;
+    if (!confirm("Delete ALL queries in this session from the server?\n\nThis is GDPR Article 17 right-to-erasure — irreversible.")) {
+      return;
+    }
+    try {
+      await deleteSession(sessionId);
+      setHistory([]);
+      onNewQuery();
+    } catch (e) {
+      setError(`Session wipe failed: ${(e as Error).message}`);
+    }
+  }, [sessionId, onNewQuery]);
 
   const onSelectHistory = useCallback(
     async (id: string) => {
@@ -153,12 +183,13 @@ export default function Home() {
       setActiveQueryId(id);
       setReplayMode(true);
       setError(null);
-      setTrace([]);
+      setSidebarOpen(false);
       try {
         const r = await fetchQuery(id);
         setQuery(r.user_query);
         setMode(r.sovereignty_mode);
         const synthetic = replayToResponse(r);
+        setTrace(synthetic.trace);
         setResult(synthetic);
         setCitations(synthetic.citations);
       } catch (e) {
@@ -183,30 +214,53 @@ export default function Home() {
         activeId={activeQueryId}
         onSelect={onSelectHistory}
         onNew={onNewQuery}
+        onDelete={onDeleteHistoryItem}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <div className="flex-1 min-w-0">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 space-y-6">
           <section className="space-y-4">
             <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <h1 className="text-2xl font-semibold tracking-tight">
-                  Ask your industrial documentation
-                </h1>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Multimodal retrieval over Siemens, Bosch Rexroth, TRUMPF, KUKA, Festo, SICK,
-                  SEW Eurodrive PDFs in DE + EN. Run locally for full data sovereignty.
-                </p>
+              <div className="flex items-start gap-2 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="md:hidden mt-1 p-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  aria-label="Open history"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+                <div className="space-y-1 min-w-0">
+                  <h1 className="text-2xl font-semibold tracking-tight">
+                    Ask your industrial documentation
+                  </h1>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    Multimodal retrieval over Siemens, Bosch Rexroth, TRUMPF, KUKA, Festo, SICK,
+                    SEW Eurodrive PDFs in DE + EN. Run locally for full data sovereignty.
+                  </p>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={onNewSession}
-                title="Wipe local session history and start a fresh one"
-                className="text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 flex items-center gap-1 px-2 py-1 rounded border border-transparent hover:border-neutral-200 dark:hover:border-neutral-800"
-              >
-                <RotateCcw className="h-3 w-3" />
-                <span>new session</span>
-              </button>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={onWipeSession}
+                  title="GDPR Art. 17 right-to-erasure — wipes ALL your queries from the server"
+                  className="hidden sm:flex text-xs text-neutral-500 hover:text-red-600 items-center gap-1 px-2 py-1 rounded border border-transparent hover:border-red-200 dark:hover:border-red-900"
+                >
+                  <span>erase data</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onNewSession}
+                  title="Wipe local session ID and start fresh"
+                  className="text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 flex items-center gap-1 px-2 py-1 rounded border border-transparent hover:border-neutral-200 dark:hover:border-neutral-800"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>new session</span>
+                </button>
+              </div>
             </div>
 
             {replayMode && (

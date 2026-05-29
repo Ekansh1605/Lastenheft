@@ -62,6 +62,7 @@ export interface ReplayedQuery {
   latency_ms: number;
   cost_usd: number;
   created_at: string;
+  trace: TraceEvent[];
 }
 
 export interface RiskClassification {

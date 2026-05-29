@@ -92,8 +92,25 @@ export async function fetchRiskClassifications(): Promise<RiskClassification[]> 
   return r.json();
 }
 
-export async function fetchAuditLog(limit = 100): Promise<{ events: AuditEvent[]; total: number }> {
-  const r = await fetch(`${API_BASE}/compliance/audit-log?limit=${limit}`);
+export async function fetchAuditLog(
+  limit = 100,
+  offset = 0,
+): Promise<{ events: AuditEvent[]; total: number }> {
+  const r = await fetch(`${API_BASE}/compliance/audit-log?limit=${limit}&offset=${offset}`);
   if (!r.ok) throw new Error(`API ${r.status}`);
   return r.json();
+}
+
+export async function deleteQuery(queryId: string): Promise<void> {
+  const r = await fetch(`${API_BASE}/query/${encodeURIComponent(queryId)}`, {
+    method: "DELETE",
+  });
+  if (!r.ok && r.status !== 404) throw new Error(`API ${r.status}: ${await r.text()}`);
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const r = await fetch(`${API_BASE}/session/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE",
+  });
+  if (!r.ok) throw new Error(`API ${r.status}`);
 }

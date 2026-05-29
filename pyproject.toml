@@ -47,6 +47,7 @@ dependencies = [
     "tenacity>=9.0.0",
     "rank-bm25>=0.2.2",
     "python-multipart>=0.0.29",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]
