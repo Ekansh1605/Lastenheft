@@ -16,7 +16,10 @@ export function PageShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "/";
   const hasSidebar = ROUTES_WITH_SIDEBAR.includes(pathname);
   return (
-    <div className={hasSidebar ? "md:pl-72 flex flex-col flex-1" : "flex flex-col flex-1"}>
+    <div
+      className={hasSidebar ? "md:pl-72 flex flex-col flex-1" : "flex flex-col flex-1"}
+      suppressHydrationWarning
+    >
       {children}
     </div>
   );

@@ -72,7 +72,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </header>
 
         {/* Spacer for fixed header height */}
-        <div className="h-16 flex-shrink-0" aria-hidden />
+        <div className="h-16 flex-shrink-0" aria-hidden suppressHydrationWarning />
 
         {/* PageShell adds md:pl-72 on routes that render a sidebar (currently
             only '/'), so the footer and main never disappear under it. */}
@@ -84,9 +84,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             className="border-t mt-12"
             style={{ background: "var(--surface)", borderColor: "var(--border)" }}
           >
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
+          <div
+            className="mx-auto max-w-6xl px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs"
+            suppressHydrationWarning
+          >
+            <div className="space-y-2" suppressHydrationWarning>
+              <div className="flex items-center gap-2" suppressHydrationWarning>
                 <BrandMark size={20} />
                 <span className="font-semibold tracking-tight" style={{ color: "var(--foreground)" }}>
                   Lastenheft
@@ -98,14 +101,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 Geschäftsgeheimnis stays on-prem.
               </p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" suppressHydrationWarning>
               <div
                 className="font-semibold uppercase tracking-[0.1em] text-[10px]"
                 style={{ color: "var(--text-subtle)" }}
+                suppressHydrationWarning
               >
                 Stack
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5" suppressHydrationWarning>
                 {[
                   "ColPali", "LangGraph", "Qwen3 4B", "BGE+LoRA",
                   "FastAPI", "Next.js 16", "pgvector", "Langfuse",
@@ -120,10 +124,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 ))}
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" suppressHydrationWarning>
               <div
                 className="font-semibold uppercase tracking-[0.1em] text-[10px]"
                 style={{ color: "var(--text-subtle)" }}
+                suppressHydrationWarning
               >
                 Compliance
               </div>
@@ -134,10 +139,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               </ul>
             </div>
           </div>
-          <div className="border-t py-3" style={{ borderColor: "var(--border)" }}>
+          <div className="border-t py-3" style={{ borderColor: "var(--border)" }} suppressHydrationWarning>
             <div
               className="mx-auto max-w-6xl px-4 sm:px-6 text-[10px] font-mono"
               style={{ color: "var(--text-subtle)" }}
+              suppressHydrationWarning
             >
               MIT · 2026 Ekansh Sharma
             </div>

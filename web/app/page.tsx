@@ -203,7 +203,11 @@ export default function Home() {
 
   if (!sessionId) {
     return (
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-12 text-sm" style={{ color: "var(--text-subtle)" }}>
+      <div
+        className="mx-auto max-w-5xl px-4 sm:px-6 py-12 text-sm"
+        style={{ color: "var(--text-subtle)" }}
+        suppressHydrationWarning
+      >
         Initialising session…
       </div>
     );
