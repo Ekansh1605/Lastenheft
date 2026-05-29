@@ -15,18 +15,28 @@ const EVENT_STYLE: Record<string, string> = {
   synthesizer: "text-emerald-600 dark:text-emerald-400",
 };
 
-function fmtCost(c: number | null): string {
-  if (!c || c === 0) return "—";
-  return `$${c.toFixed(4)}`;
+// Postgres NUMERIC columns come back as JSON strings to preserve precision;
+// coerce to number defensively before any math/format operation.
+function asNum(x: number | string | null | undefined): number | null {
+  if (x === null || x === undefined) return null;
+  const n = typeof x === "number" ? x : Number(x);
+  return Number.isFinite(n) ? n : null;
 }
-function fmtLatency(ms: number | null): string {
-  if (!ms) return "—";
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
+function fmtCost(c: number | string | null): string {
+  const n = asNum(c);
+  if (!n) return "—";
+  return `$${n.toFixed(4)}`;
 }
-function fmtTokens(tin: number | null, tout: number | null): string {
-  if (!tin && !tout) return "—";
-  return `${tin ?? 0}/${tout ?? 0}`;
+function fmtLatency(ms: number | string | null): string {
+  const n = asNum(ms);
+  if (!n) return "—";
+  if (n < 1000) return `${n}ms`;
+  return `${(n / 1000).toFixed(1)}s`;
+}
+function fmtTokens(tin: number | string | null, tout: number | string | null): string {
+  const ni = asNum(tin), no = asNum(tout);
+  if (!ni && !no) return "—";
+  return `${ni ?? 0}/${no ?? 0}`;
 }
 
 // Disable static caching so the page reflects the live DB on each visit.

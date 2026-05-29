@@ -55,4 +55,13 @@ async def get_audit_log(
     result = audit_log(limit=limit, offset=offset)
     for e in result["events"]:
         e["created_at"] = str(e["created_at"])
+        # Coerce Postgres NUMERIC -> Python float so the JSON has numbers, not strings
+        if e.get("cost_usd") is not None:
+            e["cost_usd"] = float(e["cost_usd"])
+        if e.get("token_input") is not None:
+            e["token_input"] = int(e["token_input"])
+        if e.get("token_output") is not None:
+            e["token_output"] = int(e["token_output"])
+        if e.get("latency_ms") is not None:
+            e["latency_ms"] = int(e["latency_ms"])
     return result
