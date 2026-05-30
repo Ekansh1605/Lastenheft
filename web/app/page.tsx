@@ -384,7 +384,7 @@ export default function Home() {
                         key={ex.text}
                         type="button"
                         onClick={() => setQuery(ex.text)}
-                        className="group text-left rounded-md border px-3 py-2.5 transition-all hover:border-[var(--foreground)]"
+                        className="group relative text-left cursor-pointer rounded-md border px-3 py-2.5 transition-all duration-200 hover:border-[var(--foreground)] hover:bg-[var(--surface-muted)] hover:-translate-y-px hover:shadow-sm active:translate-y-0 active:shadow-none focus-visible:border-[var(--accent)]"
                         style={{ borderColor: "var(--border)", background: "var(--surface)" }}
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -404,9 +404,18 @@ export default function Home() {
                             {ex.lang}
                           </span>
                         </div>
-                        <div className="text-[13px] leading-snug line-clamp-2" style={{ color: "var(--foreground)" }}>
+                        <div
+                          className="text-[13px] leading-snug line-clamp-2 pr-5 transition-colors group-hover:text-[var(--accent-fg)]"
+                          style={{ color: "var(--foreground)" }}
+                        >
                           {ex.text}
                         </div>
+                        {/* Slide-in arrow signals the card is clickable */}
+                        <ArrowRight
+                          className="absolute right-2.5 bottom-2.5 h-3.5 w-3.5 opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0"
+                          style={{ color: "var(--accent)" }}
+                          aria-hidden
+                        />
                       </button>
                     ))}
                   </div>
