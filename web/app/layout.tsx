@@ -11,7 +11,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Lastenheft — Sovereign Multimodal RAG",
+  title: "Lastenheft",
   description:
     "Self-hosted, EU AI Act-compliant multimodal RAG over German industrial technical documentation. ColPali + LangGraph + Qwen3, on-prem.",
 };
