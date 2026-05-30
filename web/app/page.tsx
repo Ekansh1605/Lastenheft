@@ -337,7 +337,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={onCancel}
-                      className="px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
+                      className="px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 cursor-pointer transition-all duration-200 hover:brightness-110 hover:-translate-y-px hover:shadow-sm active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                       style={{ background: "var(--surface-muted)", color: "var(--foreground)" }}
                     >
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -347,14 +347,14 @@ export default function Home() {
                     <button
                       type="submit"
                       disabled={!query.trim()}
-                      className="px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="group px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 cursor-pointer transition-all duration-200 hover:opacity-90 hover:-translate-y-px hover:shadow-md active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                       style={{
                         background: "var(--foreground)",
                         color: "var(--background)",
                       }}
                     >
                       <span>Ask</span>
-                      <Send className="h-3.5 w-3.5" />
+                      <Send className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                     </button>
                   )}
                 </div>
