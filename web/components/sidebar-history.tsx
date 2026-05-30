@@ -91,13 +91,13 @@ export function SidebarHistory({
           <button
             type="button"
             onClick={onNew}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            className="group flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium cursor-pointer transition-all duration-200 hover:opacity-90 hover:-translate-y-px hover:shadow-md active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             style={{
               background: "var(--foreground)",
               color: "var(--background)",
             }}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
             <span>New query</span>
           </button>
           <button

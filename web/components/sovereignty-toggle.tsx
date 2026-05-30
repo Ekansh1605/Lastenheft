@@ -50,7 +50,9 @@ export function SovereigntyToggle({
             onClick={() => onChange(m.value)}
             title={m.hint}
             className={[
-              "flex items-center gap-1.5 px-3 py-1.5 transition-colors relative",
+              "group flex items-center gap-1.5 px-3 py-1.5 relative cursor-pointer",
+              "transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] focus-visible:z-10",
+              !active ? "hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]" : "",
               i > 0 ? "border-l" : "",
             ].join(" ")}
             style={{
@@ -60,8 +62,22 @@ export function SovereigntyToggle({
               fontWeight: active ? 600 : 500,
             }}
           >
-            <Icon className="h-3.5 w-3.5" aria-hidden />
+            <Icon
+              className={[
+                "h-3.5 w-3.5 transition-transform",
+                !active ? "group-hover:scale-110" : "",
+              ].join(" ")}
+              aria-hidden
+            />
             <span>{m.label}</span>
+            {/* Active indicator dot under the label for selected state */}
+            {active && (
+              <span
+                aria-hidden
+                className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-[2px] w-3 rounded-full"
+                style={{ background: "var(--accent)" }}
+              />
+            )}
           </button>
         );
       })}
