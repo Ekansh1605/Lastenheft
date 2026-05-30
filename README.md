@@ -428,5 +428,3 @@ To use your own corpus, drop PDFs into `data/pdfs/` and run `uv run python -m ml
 ## License
 
 MIT. Built by **[Ekansh Sharma](https://github.com/Ekansh1605)** ([linkedin.com/in/ekansh-sharma16](https://linkedin.com/in/ekansh-sharma16)).
-
-Targeting AI Engineer / ML Engineer / Data Scientist / Full-stack roles in the German industrial Mittelstand.
