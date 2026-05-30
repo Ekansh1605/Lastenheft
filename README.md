@@ -9,6 +9,45 @@ Named after the *Lastenheft*: the customer requirements specification document e
 
 ---
 
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="web/public/screenshots/01-home-empty.png" alt="Home page" /></td>
+    <td width="50%"><img src="web/public/screenshots/02-agent-trace.png" alt="Agent trajectory in flight" /></td>
+  </tr>
+  <tr>
+    <td><sub><b>Home.</b> Sidebar with query history, sovereignty-mode toggle, branded example queries.</sub></td>
+    <td><sub><b>Live agent trajectory.</b> Planner → Retriever → Validator → Synthesizer with per-step latency.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="web/public/screenshots/03-answer-citations.png" alt="Answer with citations" /></td>
+    <td><img src="web/public/screenshots/04-sidebar-history.png" alt="Sidebar history" /></td>
+  </tr>
+  <tr>
+    <td><sub><b>Cited answer.</b> Provider, tokens, cost, latency, confidence bar. Click <code>[N]</code> to jump to source.</sub></td>
+    <td><sub><b>Sidebar history.</b> Queries grouped by Today / Yesterday / Earlier. Per-item GDPR delete.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="web/public/screenshots/05.1-compliance.png" alt="Compliance dashboard top" /></td>
+    <td><img src="web/public/screenshots/05.2-compliance.png" alt="Compliance audit log" /></td>
+  </tr>
+  <tr>
+    <td><sub><b>Compliance — Article 6.</b> Risk classification cards with rationale + mitigations per component.</sub></td>
+    <td><sub><b>Compliance — Article 13 audit log.</b> Every agent node persisted with provider/model/tokens/cost/latency.</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="web/public/screenshots/06.1-mobile.png" alt="Mobile view" width="280" /></td>
+    <td align="center"><img src="web/public/screenshots/06.2-mobile.png" alt="Mobile sidebar" width="280" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Mobile.</b> Responsive layout, hamburger menu for the history drawer.</sub></td>
+    <td align="center"><sub><b>Mobile sidebar.</b> Slide-in drawer with full query history.</sub></td>
+  </tr>
+</table>
+
+---
+
 ## Why this exists
 
 German industrial Mittelstand has 40+ years of technical documentation locked in PDFs. They need AI to unlock it, but:
