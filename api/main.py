@@ -14,7 +14,7 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from api.routers import compliance, health, ingest, query
+from api.routers import compliance, health, query
 from api.routers.query import session_router
 
 load_dotenv()
@@ -76,7 +76,6 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
-app.include_router(ingest.router)
 app.include_router(query.router)
 app.include_router(session_router)
 app.include_router(compliance.router)
