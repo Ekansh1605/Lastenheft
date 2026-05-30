@@ -11,9 +11,9 @@
 :root {
   /* Warm dark base — feels like a high-end industrial control room,
      not a generic neutral grey screen */
-  --background: #18140f;          /* deepest layer, warm near-black */
+  --background: #0c0908;          /* deepest layer, almost-black warm */
   --foreground: #e8dccc;          /* warm cream — easy on the eyes */
-  --surface: #1e1a14;             /* cards, header, sidebar */
+  --surface: #1e1a14;             /* cards, header, sidebar — pops against the darker base */
   --surface-muted: #26201a;       /* hover / zebra alternates */
   --surface-elevated: #2a241c;    /* tooltips, expanded panels */
 
