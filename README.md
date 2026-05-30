@@ -168,15 +168,15 @@ The visual embedder is selected by an env var. The default is ColPali v1.3, whic
 ```bash
 # .env
 
-# Default (3B, ~5.9 GB VRAM bf16) — best stability today
+# Default (3B, ~5.9 GB VRAM bf16). Best stability today.
 COLPALI_MODEL=vidore/colpali-v1.3
 
-# ColQwen2 v1.0 (3B, similar VRAM) — slightly better on ViDoRe leaderboard
+# ColQwen2 v1.0 (3B, similar VRAM). Slightly better on the ViDoRe leaderboard
 # but currently has a LoRA-adapter loading issue with newer colpali-engine
 # releases. Try it; the loader in ml/ingest/embedder.py falls back gracefully.
 COLPALI_MODEL=vidore/colqwen2-v1.0
 
-# ColQwen2.5 v0.1 (3B) — newest in the family, late-2025 release
+# ColQwen2.5 v0.1 (3B). Newest in the family, late-2025 release.
 COLPALI_MODEL=vidore/colqwen2.5-v0.1
 ```
 
@@ -306,7 +306,7 @@ The current `PROMPT_TEMPLATE` is generic for "industrial documentation". If you'
 ColPali shines on pages with visual structure (tables, diagrams, schematics). On pure-text pages it sometimes loses to a strong text embedder. If your corpus is mostly text (legal documents, policy PDFs), consider a hybrid:
 
 ```python
-# Sketch — not wired by default. See agents/nodes.py:retriever.
+# Sketch (not wired by default). See agents/nodes.py:retriever.
 # Run BOTH ColPali ANN AND a text embedder (e.g., BGE-multilingual on
 # extracted_text) and take the union of their top-K candidates before
 # the reranker. Best of both worlds.
