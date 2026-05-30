@@ -249,20 +249,20 @@ export default function Home() {
                 type="button"
                 onClick={onWipeSession}
                 title="GDPR Art. 17 right-to-erasure — wipes ALL your queries from the server"
-                className="hidden sm:inline-flex text-[11px] uppercase tracking-[0.1em] font-medium items-center gap-1 px-2.5 py-1.5 rounded-[3px] border transition-colors hover:border-red-300 hover:text-red-600"
+                className="group hidden sm:inline-flex text-[11px] uppercase tracking-[0.1em] font-medium items-center gap-1 px-2.5 py-1.5 rounded-[3px] border cursor-pointer transition-all duration-150 hover:border-red-400/60 hover:text-red-500 hover:bg-red-500/10 focus-visible:ring-1 focus-visible:ring-red-500"
                 style={{ color: "var(--text-subtle)", borderColor: "transparent" }}
               >
-                <Trash className="h-3 w-3" />
+                <Trash className="h-3 w-3 transition-transform group-hover:scale-110" />
                 <span>Erase data</span>
               </button>
               <button
                 type="button"
                 onClick={onNewSession}
                 title="Wipe local session ID and start fresh"
-                className="text-[11px] uppercase tracking-[0.1em] font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-[3px] border transition-colors hover:border-[var(--border-strong)]"
+                className="group text-[11px] uppercase tracking-[0.1em] font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-[3px] border cursor-pointer transition-all duration-150 hover:border-[var(--border-strong)] hover:text-[var(--foreground)] hover:bg-[var(--surface-muted)] focus-visible:ring-1 focus-visible:ring-[var(--accent)]"
                 style={{ color: "var(--text-subtle)", borderColor: "transparent" }}
               >
-                <RotateCcw className="h-3 w-3" />
+                <RotateCcw className="h-3 w-3 transition-transform group-hover:-rotate-45" />
                 <span>New session</span>
               </button>
             </div>
