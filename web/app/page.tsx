@@ -283,7 +283,7 @@ export default function Home() {
               </h1>
               <p className="text-[15px] leading-relaxed max-w-xl" style={{ color: "var(--text-muted)" }}>
                 Multimodal retrieval over technical PDFs from Siemens, Bosch Rexroth,
-                TRUMPF, KUKA, Festo, SICK and SEW Eurodrive — in German and English,
+                TRUMPF, KUKA, Festo, SICK and SEW Eurodrive in German and English,
                 with citations. Runs locally for full data sovereignty.
               </p>
             </section>
