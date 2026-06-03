@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lastenheft · Sovereign Industrial RAG</title>
+<meta name="description" content="Self-hosted, EU AI Act-compliant multimodal RAG over German industrial documentation. ColPali + LangGraph + Qwen3, on-prem." />
+
+<style>
+  /* ---------- Design tokens (match the app) ---------- */
+  :root {
+    --background: #0c0908;
+    --foreground: #e8dccc;
+    --surface: #1e1a14;
+    --surface-muted: #26201a;
+    --border: #2c261f;
+    --border-strong: #3a332a;
+    --text-muted: #b4a692;
+    --text-subtle: #7d7159;
+    --accent: #10b981;
+    --accent-soft: rgba(16, 185, 129, 0.14);
+    --accent-fg: #6ee7b7;
+    --maxw: 920px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--accent-soft); }
+
+  .mono { font-family: "SF Mono", "Geist Mono", ui-monospace, "Cascadia Code", Consolas, monospace; }
+
+  a { color: var(--accent-fg); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--background) 82%, transparent);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    height: 60px; display: flex; align-items: center; justify-content: space-between;
+    max-width: var(--maxw); margin: 0 auto; padding: 0 24px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .mark {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: #2a241c; border: 1px solid var(--border-strong);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; color: var(--accent); letter-spacing: -0.5px;
+  }
+  .brand-name { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  .nav-links { display: flex; align-items: center; gap: 8px; }
+  .nav a.cta {
+    font-size: 13px; color: var(--text-muted); padding: 7px 14px;
+    border: 1px solid var(--border-strong); border-radius: 6px; transition: all .15s;
+  }
+  .nav a.cta:hover { color: var(--foreground); border-color: var(--text-subtle); text-decoration: none; }
+  .nav a.cta-primary {
+    background: var(--accent); color: #07130d; border-color: var(--accent); font-weight: 600;
+  }
+  .nav a.cta-primary:hover { filter: brightness(1.08); color: #07130d; text-decoration: none; }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 80px 0 60px; text-align: center; }
+  .eyebrow {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em;
+    font-weight: 600; color: var(--accent); margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 60px); line-height: 1.05; letter-spacing: -0.03em;
+    font-weight: 700; margin-bottom: 20px;
+  }
+  .hero h1 .muted { color: var(--text-muted); }
+  .hero p.lead {
+    font-size: 18px; color: var(--text-muted); max-width: 640px; margin: 0 auto 32px;
+  }
+  .hero .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px; border-radius: 8px; font-size: 15px; font-weight: 600;
+    transition: all .2s; cursor: pointer;
+  }
+  .btn-primary { background: var(--foreground); color: var(--background); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.4); text-decoration: none; }
+  .btn-ghost { background: transparent; color: var(--foreground); border: 1px solid var(--border-strong); }
+  .btn-ghost:hover { background: var(--surface-muted); text-decoration: none; }
+
+  .tagline-de {
+    margin-top: 28px; font-size: 15px; color: var(--text-muted); font-style: italic;
+  }
+  .tagline-en {
+    margin-top: 4px; font-size: 12px; color: var(--text-subtle);
+  }
+
+  /* ---------- Sections ---------- */
+  section { padding: 56px 0; }
+  .section-eyebrow {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+    font-weight: 600; color: var(--accent); margin-bottom: 10px;
+  }
+  h2 {
+    font-size: clamp(24px, 4vw, 34px); letter-spacing: -0.02em; font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .section-lead { font-size: 16px; color: var(--text-muted); max-width: 680px; margin-bottom: 28px; }
+
+  .divider { height: 1px; background: linear-gradient(to right, transparent, var(--border), transparent); }
+
+  /* ---------- Problem cards ---------- */
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 22px;
+  }
+  .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .card p { font-size: 14px; color: var(--text-muted); }
+  .card .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 6px; background: var(--accent-soft);
+    color: var(--accent-fg); font-size: 12px; font-weight: 700;
+  }
+
+  /* ---------- Pipeline ---------- */
+  .pipeline { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .step {
+    flex: 1; min-width: 180px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; position: relative;
+  }
+  .step + .step { margin-left: 14px; }
+  .step .step-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+  .step h4 { font-size: 15px; margin-bottom: 4px; }
+  .step p { font-size: 13px; color: var(--text-muted); }
+  .arrow { color: var(--text-subtle); align-self: center; font-size: 20px; padding: 0 4px; }
+
+  /* ---------- Screenshots ---------- */
+  .shot { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+  .shot img { width: 100%; display: block; }
+  .shot .cap { padding: 12px 16px; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); }
+  .shot .cap b { color: var(--foreground); font-weight: 600; }
+  .shots-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .shots-mobile { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 560px; margin: 0 auto; }
+
+  /* ---------- Metrics ---------- */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; }
+  .metric .big { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; color: var(--accent); }
+  .metric .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-subtle); margin-top: 4px; }
+  .metric .sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+  table.eval {
+    width: 100%; border-collapse: collapse; font-size: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  table.eval th, table.eval td { padding: 11px 16px; text-align: left; }
+  table.eval th { background: var(--surface-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-subtle); font-weight: 600; }
+  table.eval td { border-top: 1px solid var(--border); color: var(--text-muted); }
+  table.eval tr.best td { color: var(--foreground); font-weight: 600; }
+  table.eval tr.best td:first-child { color: var(--accent-fg); }
+  table.eval td.r { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Stack pills ---------- */
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    font-size: 12px; padding: 5px 12px; border-radius: 6px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+  }
+  .pill b { color: var(--foreground); }
+
+  /* ---------- Compliance list ---------- */
+  .compliance-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; }
+  .compliance-list li { list-style: none; font-size: 14px; color: var(--text-muted); display: flex; gap: 10px; align-items: flex-start; }
+  .compliance-list li::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 9px; flex-shrink: 0; }
+  .compliance-list b { color: var(--foreground); font-weight: 600; }
+
+  /* ---------- Final CTA ---------- */
+  .final {
+    text-align: center; background: var(--surface); border: 1px solid var(--border-strong);
+    border-radius: 16px; padding: 48px 32px; margin: 0 0 40px;
+  }
+  .final h2 { margin-bottom: 12px; }
+  .final p { color: var(--text-muted); margin-bottom: 24px; max-width: 520px; margin-left: auto; margin-right: auto; }
+
+  /* ---------- Footer ---------- */
+  footer { border-top: 1px solid var(--border); padding: 28px 0; }
+  .foot { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-subtle); flex-wrap: wrap; gap: 10px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 720px) {
+    .grid-2, .grid-3, .metrics, .shots-2, .compliance-list { grid-template-columns: 1fr; }
+    .pipeline { flex-direction: column; }
+    .step + .step { margin-left: 0; margin-top: 14px; }
+    .arrow { transform: rotate(90deg); padding: 4px 0; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== HEADER ===================== -->
+<header>
+  <div class="nav">
+    <div class="brand">
+      <span class="mark">LS</span>
+      <span class="brand-name">Lastenheft</span>
+    </div>
+    <a class="cta cta-primary" href="https://lastenheft.vercel.app/" target="_blank" rel="noreferrer">Live Demo →</a>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<div class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Sovereign Multimodal RAG</div>
+    <h1>Ask your industrial<br /><span class="muted">documentation.</span></h1>
+    <p class="lead">
+      A self-hosted AI that answers questions over German industrial PDFs
+      (Siemens, Bosch, TRUMPF, KUKA, Festo) in German and English. No OCR.
+      No data sent to OpenAI. EU AI Act compliant by design.
+    </p>
+    <div class="buttons">
+      <a class="btn btn-primary" href="https://lastenheft.vercel.app/" target="_blank" rel="noreferrer">Live Demo</a>
+      <a class="btn btn-ghost" href="https://github.com/Ekansh1605/Lastenheft" target="_blank" rel="noreferrer">View Code</a>
+    </div>
+    <div class="tagline-de">„Geschäftsgeheimnis gehört nicht in OpenAIs Logs."</div>
+    <div class="tagline-en">Trade secrets don't belong in OpenAI's logs.</div>
+  </div>
+</div>
+
+<!-- ===================== PROBLEM ===================== -->
+<section>
+  <div class="wrap">
+    <div class="section-eyebrow">The Problem</div>
+    <h2>Why German industry needs this</h2>
+    <p class="section-lead">
+      Mittelstand companies have 40+ years of technical knowledge locked inside PDFs.
+      They want AI to unlock it. But the usual tools don't fit.
+    </p>
+    <div class="grid-2">
+      <div class="card">
+        <h3><span class="num">1</span> Data must stay on-prem</h3>
+        <p>Engineering drawings and datasheets are IP. They cannot be sent to OpenAI or any US cloud. Lastenheft runs entirely on your own hardware.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">2</span> EU AI Act is active</h3>
+        <p>Industrial AI often counts as high-risk. Every deployment needs risk classification, transparency, and an audit trail. Built in here, not bolted on.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">3</span> Diagrams break OCR</h3>
+        <p>Technical pages are full of tables, schematics, and drawings. Text-only systems lose them. Lastenheft reads the page as an image, directly.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">4</span> Precision matters</h3>
+        <p>When tolerances and certifications are on the line, a hallucinated answer is worse than no answer. Every fact here is cited to a source page.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ===================== HOW IT WORKS ===================== -->
+<section id="how">
+  <div class="wrap">
+    <div class="section-eyebrow">How it works</div>
+    <h2>Four agents, one answer</h2>
+    <p class="section-lead">
+      You ask a question. A multi-agent pipeline finds the right pages, checks them,
+      and writes a cited answer. You watch every step happen live.
+    </p>
+    <div class="pipeline">
+      <div class="step">
+        <div class="step-label">1 · Planner</div>
+        <h4>Understands</h4>
+        <p>Breaks your question down and decides how hard it is.</p>
+      </div>
+      <span class="arrow">→</span>
+      <div class="step">
+        <div class="step-label">2 · Retriever</div>
+        <h4>Finds pages</h4>
+        <p>ColPali visual search over 900+ pages. No OCR. Works on diagrams.</p>
+      </div>
+      <span class="arrow">→</span>
+      <div class="step">
+        <div class="step-label">3 · Validator</div>
+        <h4>Checks</h4>
+        <p>Confirms the found pages can actually answer the question.</p>
+      </div>
+      <span class="arrow">→</span>
+      <div class="step">
+        <div class="step-label">4 · Synthesizer</div>
+        <h4>Answers</h4>
+        <p>Writes the answer with a citation on every fact. Local or API.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SCREENSHOTS ===================== -->
+<section>
+  <div class="wrap">
+    <div class="section-eyebrow">The interface</div>
+    <h2>See it in action</h2>
+    <p class="section-lead">Clean, fast, German-industrial. Dark interface built for long reading sessions.</p>
+
+    <div class="shots-2">
+      <div class="shot">
+        <img src="web/public/screenshots/01-home-empty.png" alt="Home page" loading="lazy" />
+        <div class="cap"><b>Home.</b> Sidebar history, sovereignty toggle, example queries.</div>
+      </div>
+      <div class="shot">
+        <img src="web/public/screenshots/02-agent-trace.png" alt="Agent trajectory" loading="lazy" />
+        <div class="cap"><b>Live trajectory.</b> Watch the four agents run, with timing.</div>
+      </div>
+    </div>
+    <div class="shots-2">
+      <div class="shot">
+        <img src="web/public/screenshots/03-answer-citations.png" alt="Answer with citations" loading="lazy" />
+        <div class="cap"><b>Cited answer.</b> Provider, cost, latency. Click [1] to see the source.</div>
+      </div>
+      <div class="shot">
+        <img src="web/public/screenshots/04-sidebar-history.png" alt="Sidebar history" loading="lazy" />
+        <div class="cap"><b>History.</b> Past queries grouped by day. Delete any of them (GDPR).</div>
+      </div>
+    </div>
+    <div class="shots-2">
+      <div class="shot">
+        <img src="web/public/screenshots/05.1-compliance.png" alt="Compliance risk classification" loading="lazy" />
+        <div class="cap"><b>Compliance, Article 6.</b> Risk classification with documented reasoning.</div>
+      </div>
+      <div class="shot">
+        <img src="web/public/screenshots/05.2-compliance.png" alt="Compliance audit log" loading="lazy" />
+        <div class="cap"><b>Compliance, Article 13.</b> A real audit log of every AI call.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <div class="shots-mobile">
+        <div class="shot">
+          <img src="web/public/screenshots/06.1-mobile.png" alt="Mobile view" loading="lazy" />
+          <div class="cap"><b>Mobile.</b> Fully responsive.</div>
+        </div>
+        <div class="shot">
+          <img src="web/public/screenshots/06.2-mobile.png" alt="Mobile sidebar" loading="lazy" />
+          <div class="cap"><b>Drawer.</b> History on small screens.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ===================== NUMBERS ===================== -->
+<section>
+  <div class="wrap">
+    <div class="section-eyebrow">Measured, not claimed</div>
+    <h2>The numbers</h2>
+    <p class="section-lead">
+      Evaluated on 108 held-out questions over 909 pages. The fine-tuned reranker
+      beats the off-the-shelf one by a clear margin.
+    </p>
+
+    <div class="metrics" style="margin-bottom:24px;">
+      <div class="metric">
+        <div class="big">70.4%</div>
+        <div class="label">Hit@1</div>
+        <div class="sub">correct page ranked first</div>
+      </div>
+      <div class="metric">
+        <div class="big">0.758</div>
+        <div class="label">MRR</div>
+        <div class="sub">+8 pts from fine-tuning</div>
+      </div>
+      <div class="metric">
+        <div class="big">0.752</div>
+        <div class="label">Faithfulness</div>
+        <div class="sub">answers grounded in sources</div>
+      </div>
+      <div class="metric">
+        <div class="big">$0</div>
+        <div class="label">Cost / query</div>
+        <div class="sub">in local sovereign mode</div>
+      </div>
+    </div>
+
+    <table class="eval">
+      <thead>
+        <tr>
+          <th>Retrieval strategy</th>
+          <th style="text-align:right">MRR</th>
+          <th style="text-align:right">Hit@1</th>
+          <th style="text-align:right">Hit@10</th>
+          <th style="text-align:right">nDCG@10</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ColPali visual search (baseline)</td>
+          <td class="r">0.341</td><td class="r">20.4%</td><td class="r">61.1%</td><td class="r">0.395</td>
+        </tr>
+        <tr>
+          <td>+ BGE reranker (off-the-shelf)</td>
+          <td class="r">0.707</td><td class="r">62.0%</td><td class="r">85.2%</td><td class="r">0.743</td>
+        </tr>
+        <tr class="best">
+          <td>+ BGE reranker (my LoRA fine-tune)</td>
+          <td class="r">0.758</td><td class="r">70.4%</td><td class="r">85.2%</td><td class="r">0.781</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ===================== COMPLIANCE ===================== -->
+<section>
+  <div class="wrap">
+    <div class="section-eyebrow">Compliance</div>
+    <h2>EU AI Act, designed in</h2>
+    <p class="section-lead">
+      Not a marketing slide. Every requirement maps to working code and a real database table.
+    </p>
+    <ul class="compliance-list">
+      <li><span><b>Article 6:</b> self-classified risk category with documented rationale.</span></li>
+      <li><span><b>Article 13:</b> every answer shows which AI made it, with citations.</span></li>
+      <li><span><b>Article 14:</b> human oversight, with a full audit log you can review.</span></li>
+      <li><span><b>Article 10:</b> data lineage from answer back to source page.</span></li>
+      <li><span><b>GDPR Art. 17:</b> right to erasure. Delete any query or session.</span></li>
+      <li><span><b>GDPR Art. 25:</b> privacy by design, data residency configurable.</span></li>
+    </ul>
+  </div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ===================== STACK ===================== -->
+<section>
+  <div class="wrap">
+    <div class="section-eyebrow">Under the hood</div>
+    <h2>Built end to end</h2>
+    <p class="section-lead">Real ML, real engineering, real deployment. Every layer chosen for sovereignty and precision.</p>
+    <div class="pills">
+      <span class="pill"><b>ColPali v1.3</b> · visual retrieval, no OCR</span>
+      <span class="pill"><b>BGE reranker + LoRA</b> · fine-tuned</span>
+      <span class="pill"><b>LangGraph</b> · multi-agent</span>
+      <span class="pill"><b>Qwen3 4B</b> · local LLM via Ollama</span>
+      <span class="pill"><b>Claude Sonnet</b> · optional API escalation</span>
+      <span class="pill"><b>FastAPI</b> · Python backend</span>
+      <span class="pill"><b>Next.js 16</b> · React frontend</span>
+      <span class="pill"><b>Postgres + pgvector</b> · vector DB</span>
+      <span class="pill"><b>Langfuse</b> · observability</span>
+      <span class="pill"><b>Docker Compose</b> · one-command deploy</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FINAL CTA ===================== -->
+<section>
+  <div class="wrap">
+    <div class="final">
+      <div class="section-eyebrow" style="justify-content:center;">Open source · MIT</div>
+      <h2>Explore the project</h2>
+      <p>
+        Full source code, reproducible eval, training scripts, and a one-command
+        Docker setup. Clone it, run it on your own hardware, point it at your own PDFs.
+      </p>
+      <div class="buttons" style="justify-content:center;">
+        <a class="btn btn-primary" href="https://lastenheft.vercel.app/" target="_blank" rel="noreferrer">Live Demo</a>
+        <a class="btn btn-ghost" href="https://github.com/Ekansh1605/Lastenheft" target="_blank" rel="noreferrer">View Code</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <span class="mono">MIT · 2026 Ekansh Sharma</span>
+      <span>Built for the German industrial Mittelstand.</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
